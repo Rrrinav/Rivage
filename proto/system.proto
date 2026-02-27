@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package system;
+
+// The go_package option is critical for Go imports
+option go_package = "dist-system/proto";
+
+// The main service run by the Coordinator (Master)
+service Coordinator {
+  // A bi-directional stream.
+  // The Executor (Worker) calls this once to "check in" and
+  // keeps the stream open to receive tasks and send results.
+  rpc RegisterAndStream(stream ExecutorMessage) returns (stream CoordinatorMessage);
+}
+
+// -----------------------------------------------------
+// Message FROM: Executor (Worker)
+// Message TO:   Coordinator (Master)
+// -----------------------------------------------------
+message ExecutorMessage {
+  // The first message from an Executor MUST be a 'register' request.
+  // All subsequent messages MUST be a 'result'.
+  // 'oneof' enforces this.
+  oneof payload {
+    RegistrationRequest register = 1;
+    TaskResult result = 2;
+  }
+}
+
+// Sent by the Executor as its FIRST message.
+// This is where we send context like "number of cores".
+message RegistrationRequest {
+  string worker_id = 1; // e.g., "hostname-gpu-01"
+  int32 cpu_cores = 2;
+  int64 available_ram = 3;
+}
+
+// Sent by the Executor any time it finishes a task.
+message TaskResult {
+  string task_id = 1;   // The ID of the task this is a result for
+  bool success = 2;     // True if exit code was 0
+  bytes output_data = 3; // Data captured from the sub-process's STDOUT
+  string error_log = 4;   // Data captured from STDERR
+}
+
+
+// -----------------------------------------------------
+// Message FROM: Coordinator (Master)
+// Message TO:   Executor (Worker)
+// -----------------------------------------------------
+message CoordinatorMessage {
+  // This is the one and only message from the Coordinator.
+  // We'll just call it 'Task'.
+  Task task = 1;
+}
+
+// This is the core "command" we send to the Executor.
+message Task {
+  string task_id = 1; // A unique ID so we can track this task
+
+  // The command to run.
+  // e.g., "./my_cpp_task", "python3", or "echo"
+  string command = 2;
+
+  // The arguments for the command.
+  // e.g., "my_script.py" (if command was "python3")
+  repeated string args = 3;
+
+  // The raw data (e.g., JSON, text, etc.) that will be piped
+  // to the sub-process's STDIN.
+  bytes input_data = 4;
+}
