@@ -1,13 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log"
+	"os/exec"
 	"runtime"
 	"time"
 
-	pb "dist-system/proto" // Import our generated code
+	pb "dist-system/proto"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -15,33 +17,46 @@ import (
 
 const (
 	address  = "localhost:50051"
-	workerID = "go-worker-01" // In a real app, this would be dynamic (e.g., hostname)
+	workerID = "go-worker-01"
 )
 
-// handleTask is the "Layer 1" stub. It just pretends to work.
+// handleTask executes whatever command the coordinator sends.
+// Contract: input_data is piped to STDIN, STDOUT is captured as output.
+// The task doesn't have to be Python — any executable works.
 func handleTask(task *pb.Task) *pb.TaskResult {
-	log.Printf("[Worker] Received Task %s: running command '%s'",
-		task.GetTaskId(), task.GetCommand())
+	log.Printf("[Worker] Received Task %s: %s %v", task.GetTaskId(), task.GetCommand(), task.GetArgs())
 
-	// --- LAYER 1: FAKE WORK ---
-	// We just pretend to do the work.
-	// In Layer 2, we will replace this with the real os/exec.
-	time.Sleep(2 * time.Second)
-	// ---
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, task.GetCommand(), task.GetArgs()...)
+
+	// Pipe InputData → STDIN of the subprocess
+	cmd.Stdin = bytes.NewReader(task.GetInputData())
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		log.Printf("[Worker] Task %s FAILED: %v\nSTDERR: %s", task.GetTaskId(), err, stderr.String())
+		return &pb.TaskResult{
+			TaskId:   task.GetTaskId(),
+			Success:  false,
+			ErrorLog: stderr.String(),
+		}
+	}
 
 	log.Printf("[Worker] Task %s completed successfully.", task.GetTaskId())
-
-	// We pretend the task succeeded and send back some fake output
 	return &pb.TaskResult{
-		TaskId:      task.GetTaskId(),
-		Success:     true,
-		OutputData:  []byte("Task completed successfully! (Fake output)"),
-		ErrorLog:    "",
+		TaskId:     task.GetTaskId(),
+		Success:    true,
+		OutputData: stdout.Bytes(),
 	}
 }
 
 func main() {
-	// 1. Connect to the Coordinator
 	conn, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("[Worker] Did not connect: %v", err)
@@ -51,67 +66,58 @@ func main() {
 	c := pb.NewCoordinatorClient(conn)
 	ctx := context.Background()
 
-	// 2. Call the streaming RPC
 	stream, err := c.RegisterAndStream(ctx)
 	if err != nil {
 		log.Fatalf("[Worker] Could not open stream: %v", err)
 	}
-	log.Printf("[Worker] Connected to stream.")
+	log.Printf("[Worker] Connected to coordinator.")
 
-	// 3. Send the first message: Registration
+	// Send registration
 	regReq := &pb.RegistrationRequest{
-		WorkerId:   workerID,
-		CpuCores:   int32(runtime.NumCPU()), // Here we send the *real* core count
-		AvailableRam: 1024 * 8, // We can fake this for now
+		WorkerId:     workerID,
+		CpuCores:     int32(runtime.NumCPU()),
+		AvailableRam: 1024 * 8,
 	}
-	firstMsg := &pb.ExecutorMessage{
+	if err := stream.Send(&pb.ExecutorMessage{
 		Payload: &pb.ExecutorMessage_Register{Register: regReq},
-	}
-
-	if err := stream.Send(firstMsg); err != nil {
+	}); err != nil {
 		log.Fatalf("[Worker] Failed to send registration: %v", err)
 	}
-	log.Printf("[Worker] Sent registration for worker: %s (Cores: %d)",
-		workerID, regReq.CpuCores)
+	log.Printf("[Worker] Registered as %s (Cores: %d)", workerID, regReq.CpuCores)
 
-	// --- 4. The Main Loop: Send/Recv ---
+	// Channel to send results back without blocking the receive loop
+	resultsChan := make(chan *pb.TaskResult, 10)
 
-	// This goroutine handles sending results *back* to the server
-	// We use a channel to pass results from our 'handleTask'
-	// function to our stream sender.
-	resultsChan := make(chan *pb.TaskResult)
+	// Goroutine: sends results back to coordinator
 	go func() {
 		for result := range resultsChan {
 			log.Printf("[Worker] Sending result for Task %s...", result.GetTaskId())
-			msg := &pb.ExecutorMessage{
+			if err := stream.Send(&pb.ExecutorMessage{
 				Payload: &pb.ExecutorMessage_Result{Result: result},
-			}
-			if err := stream.Send(msg); err != nil {
+			}); err != nil {
 				log.Printf("[Worker] Error sending result: %v", err)
 			}
 		}
 	}()
 
-	// This loop handles *receiving* tasks from the server
+	// Main loop: receive tasks from coordinator
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {
 			log.Println("[Worker] Server closed the stream.")
-			close(resultsChan) // Close the channel when done
+			close(resultsChan)
 			return
 		}
 		if err != nil {
 			log.Fatalf("[Worker] Error receiving task: %v", err)
 		}
 
-		// We got a task from the Coordinator
 		task := msg.GetTask()
 
-		// When we get a task, run it in a new goroutine
-		// so we can handle multiple tasks in parallel
+		// Run each task in its own goroutine so we can handle multiple in parallel
 		go func(t *pb.Task) {
 			result := handleTask(t)
-			resultsChan <- result // Send the result to our sender goroutine
+			resultsChan <- result
 		}(task)
 	}
 }
