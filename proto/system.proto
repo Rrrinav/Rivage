@@ -1,56 +1,61 @@
 syntax = "proto3";
 
 package system;
-
 option go_package = "dist-system/proto";
 
-// Enums
+// Define the phases of our MapReduce pipeline
 enum TaskType {
-  MAP    = 0;
-  REDUCE = 1;
+  UNKNOWN = 0;
+  MAP = 1;
+  REDUCE = 2;
 }
 
-// Worker to Coordinator
-
+// -----------------------------------------------------
+// Message FROM: Executor (Worker)
+// Message TO:   Coordinator (Master)
+// -----------------------------------------------------
 message ExecutorMessage {
   oneof payload {
     RegistrationRequest register = 1;
-    TaskResult          result   = 2;
+    TaskResult result = 2;
   }
 }
 
 message RegistrationRequest {
-  string worker_id     = 1;
-  int32  cpu_cores     = 2;
-  int64  available_ram = 3;
+  string worker_id = 1; 
+  int32 cpu_cores = 2;
+  int64 available_ram = 3;
 }
 
 message TaskResult {
-  string   task_id    = 1;
-  string   job_id     = 2;   // NEW: no more string hacking to find the job
-  TaskType task_type  = 3;   // NEW: coordinator knows what phase this result is from
-  bool     success    = 4;
-  bytes    output_data = 5;
-  string   error_log  = 6;
+  string task_id = 1;
+  string job_id = 2;
+  TaskType task_type = 3;
+  bool success = 4;
+  bytes output_data = 5;
+  string error_log = 6;
 }
 
-// Coordinator to Worker
-
+// -----------------------------------------------------
+// Message FROM: Coordinator (Master)
+// Message TO:   Executor (Worker)
+// -----------------------------------------------------
 message CoordinatorMessage {
   Task task = 1;
 }
 
 message Task {
-  string          task_id    = 1;
-  string          job_id     = 2;   // NEW: ties this task back to a job
-  TaskType        task_type  = 3;   // NEW: MAP, REDUCE, etc.
-  string          command    = 4;   // e.g. "python3"
-  repeated string args       = 5;   // e.g. ["tasks/map.py"]
-  bytes           input_data = 6;   // JSON piped to STDIN
+  string task_id = 1;
+  string job_id = 2;
+  TaskType task_type = 3;
+  string command = 4;
+  repeated string args = 5;
+  bytes input_data = 6;
 }
 
-// Service
-
+// -----------------------------------------------------
+// RPC Service
+// -----------------------------------------------------
 service Coordinator {
   rpc RegisterAndStream(stream ExecutorMessage) returns (stream CoordinatorMessage);
 }

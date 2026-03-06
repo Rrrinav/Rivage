@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
+	"os"
 	"os/exec"
 	"runtime"
 	"time"
@@ -16,13 +18,12 @@ import (
 )
 
 const (
-	address  = "localhost:50051"
-	workerID = "go-worker-01"
+	address = "localhost:50051"
 )
 
 // handleTask executes whatever command the coordinator sends.
 // Contract: input_data is piped to STDIN, STDOUT is captured as output.
-// The task doesn't have to be Python — any executable works.
+// The task doesn't have to be Python - any executable works.
 func handleTask(task *pb.Task) *pb.TaskResult {
 	log.Printf("[Worker] Received Task %s: %s %v", task.GetTaskId(), task.GetCommand(), task.GetArgs())
 
@@ -31,7 +32,7 @@ func handleTask(task *pb.Task) *pb.TaskResult {
 
 	cmd := exec.CommandContext(ctx, task.GetCommand(), task.GetArgs()...)
 
-	// Pipe InputData → STDIN of the subprocess
+	// Pipe InputData -> STDIN of the subprocess
 	cmd.Stdin = bytes.NewReader(task.GetInputData())
 
 	var stdout, stderr bytes.Buffer
@@ -43,6 +44,8 @@ func handleTask(task *pb.Task) *pb.TaskResult {
 		log.Printf("[Worker] Task %s FAILED: %v\nSTDERR: %s", task.GetTaskId(), err, stderr.String())
 		return &pb.TaskResult{
 			TaskId:   task.GetTaskId(),
+			JobId:    task.GetJobId(),
+			TaskType: task.GetTaskType(),
 			Success:  false,
 			ErrorLog: stderr.String(),
 		}
@@ -51,6 +54,8 @@ func handleTask(task *pb.Task) *pb.TaskResult {
 	log.Printf("[Worker] Task %s completed successfully.", task.GetTaskId())
 	return &pb.TaskResult{
 		TaskId:     task.GetTaskId(),
+		JobId:      task.GetJobId(),
+		TaskType:   task.GetTaskType(),
 		Success:    true,
 		OutputData: stdout.Bytes(),
 	}
@@ -71,6 +76,13 @@ func main() {
 		log.Fatalf("[Worker] Could not open stream: %v", err)
 	}
 	log.Printf("[Worker] Connected to coordinator.")
+
+	// Generate a dynamic worker ID based on hostname and a timestamp
+	hostname, err := os.Hostname()
+	if err != nil {
+		hostname = "unknown-host"
+	}
+	workerID := fmt.Sprintf("%s-%d", hostname, time.Now().UnixMilli()%10000)
 
 	// Send registration
 	regReq := &pb.RegistrationRequest{

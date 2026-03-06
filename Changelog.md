@@ -1,5 +1,17 @@
 # Change-log to track progress for report making
 
+## 3rd commit
+
+Refactored Protobuf contracts, added dynamic worker IDs, and implemented Round-Robin task scheduling.
+
+**Changes:**
+- **Protobuf Contract Upgrade**: Removed the fragile string-parsing hack (extractJobID) by explicitly adding job_id and an enum TaskType (MAP, REDUCE) to both Task and TaskResult messages. Recompiled Protobuf files using the new build_proto.py script.
+- **Dynamic Worker Registration**: Workers now dynamically generate unique IDs using their hostname and a timestamp (e.g., fedora-9540-1234). This allows multiple worker instances to run concurrently on the exact same machine without ID collisions in the Coordinator's sync.Map.
+- **Round-Robin Task Scheduling**: Upgraded the coordinator's pickWorker logic. Instead of blindly sending 100% of tasks to the first available worker, it now maintains a thread-safe workerList (protected by a sync.Mutex) and distributes tasks evenly across all connected workers using a modulo-based Round-Robin algorithm (rrIndex % len).
+- **Directory Restructuring**: Moved example-tasks/ inside the worker/ directory for better logical separation, updating the coordinator's script execution paths to worker/example-tasks/map.py and worker/example-tasks/reduce.py.
+- **Build Automation**: Added build_proto.py to automate environment pathing and compilation of system.proto.
+- **Verified**: Spun up multiple workers in separate terminals. The coordinator successfully alternated task dispatching between all workers, routing results seamlessly back to the Job struct using the new, strictly typed protobuf fields
+
 ## 2nd commit
 
 Implemented polyglot MapReduce pipeline using Python scripts as task executors.

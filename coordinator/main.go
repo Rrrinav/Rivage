@@ -84,7 +84,31 @@ type coordinatorServer struct {
 	pb.UnimplementedCoordinatorServer
 
 	workerStreams sync.Map // workerID -> pb.Coordinator_RegisterAndStreamServer
-	jobs         sync.Map  // jobID -> *Job
+	jobs          sync.Map // jobID -> *Job
+
+	// Round-Robin scheduling state
+	workerList []string
+	rrMutex    sync.Mutex
+	rrIndex    int
+}
+
+// Helper to add a worker to the rotation
+func (s *coordinatorServer) addWorker(id string) {
+	s.rrMutex.Lock()
+	defer s.rrMutex.Unlock()
+	s.workerList = append(s.workerList, id)
+}
+
+// Helper to remove a worker from the rotation
+func (s *coordinatorServer) removeWorker(id string) {
+	s.rrMutex.Lock()
+	defer s.rrMutex.Unlock()
+	for i, w := range s.workerList {
+		if w == id {
+			s.workerList = append(s.workerList[:i], s.workerList[i+1:]...)
+			break
+		}
+	}
 }
 
 func (s *coordinatorServer) RegisterAndStream(stream pb.Coordinator_RegisterAndStreamServer) error {
@@ -104,7 +128,13 @@ func (s *coordinatorServer) RegisterAndStream(stream pb.Coordinator_RegisterAndS
 		workerID, regReq.Register.GetCpuCores(), p.Addr)
 
 	s.workerStreams.Store(workerID, stream)
-	defer s.workerStreams.Delete(workerID)
+	s.addWorker(workerID)
+
+	// Clean up worker when they disconnect
+	defer func() {
+		s.workerStreams.Delete(workerID)
+		s.removeWorker(workerID)
+	}()
 
 	// Listen for results
 	for {
@@ -123,10 +153,12 @@ func (s *coordinatorServer) RegisterAndStream(stream pb.Coordinator_RegisterAndS
 			log.Printf("[Coordinator] Result for Task %s from %s: success=%t",
 				result.GetTaskId(), workerID, result.GetSuccess())
 
-			// Route the result back to its job
-			jobID := extractJobID(result.GetTaskId())
+			// Route the result back to its job using the explicit job_id from protobuf
+			jobID := result.GetJobId()
 			if jobVal, ok := s.jobs.Load(jobID); ok {
 				jobVal.(*Job).recordResult(result)
+			} else {
+				log.Printf("[Coordinator] Warning: Job %s not found for task %s", jobID, result.GetTaskId())
 			}
 		}
 	}
@@ -142,25 +174,29 @@ func (s *coordinatorServer) sendTask(workerID string, task *pb.Task) error {
 	return stream.Send(&pb.CoordinatorMessage{Task: task})
 }
 
-// pickWorker returns the first available worker (round-robin can be added later).
+// pickWorker returns the next available worker using Round-Robin scheduling.
 func (s *coordinatorServer) pickWorker() (string, bool) {
-	var id string
-	s.workerStreams.Range(func(key, _ interface{}) bool {
-		id = key.(string)
-		return false // stop at first
-	})
-	return id, id != ""
+	s.rrMutex.Lock()
+	defer s.rrMutex.Unlock()
+
+	if len(s.workerList) == 0 {
+		return "", false
+	}
+
+	id := s.workerList[s.rrIndex%len(s.workerList)]
+	s.rrIndex++
+	return id, true
 }
 
 // -----------------------------------------------------------------
 // MapReduce orchestration
 // -----------------------------------------------------------------
 
-// MapReduceJob runs a full map → reduce pipeline.
+// MapReduceJob runs a full map -> reduce pipeline.
 //
-//	inputChunks  — one element per map task (each is JSON bytes for the map script)
-//	mapScript    — path to the Python map script   e.g. "tasks/map.py"
-//	reduceScript — path to the Python reduce script e.g. "tasks/reduce.py"
+//	inputChunks  - one element per map task (each is JSON bytes for the map script)
+//	mapScript    - path to the Python map script   e.g. "/example-tasks/map.py"
+//	reduceScript - path to the Python reduce script e.g. "/example-tasks/reduce.py"
 func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, mapScript, reduceScript string) ([]byte, error) {
 
 	log.Printf("[Coordinator] [%s] Starting MAP phase (%d chunks)", jobID, len(inputChunks))
@@ -173,7 +209,7 @@ func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, map
 	mapJob := newJob(jobID+"-map", mapTaskIDs)
 	s.jobs.Store(mapJob.id, mapJob)
 
-	// Dispatch map tasks — wait for at least one worker
+	// Dispatch map tasks - wait for at least one worker
 	for {
 		_, ok := s.pickWorker()
 		if ok {
@@ -187,6 +223,8 @@ func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, map
 		workerID, _ := s.pickWorker()
 		task := &pb.Task{
 			TaskId:    mapTaskIDs[i],
+			JobId:     mapJob.id,
+			TaskType:  pb.TaskType_MAP,
 			Command:   "python3",
 			Args:      []string{mapScript},
 			InputData: chunk,
@@ -242,6 +280,8 @@ func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, map
 		workerID, _ := s.pickWorker()
 		task := &pb.Task{
 			TaskId:    reduceTaskIDs[j],
+			JobId:     reduceJob.id,
+			TaskType:  pb.TaskType_REDUCE,
 			Command:   "python3",
 			Args:      []string{reduceScript},
 			InputData: payload,
@@ -273,24 +313,6 @@ func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, map
 }
 
 // -----------------------------------------------------------------
-// Helpers
-// -----------------------------------------------------------------
-
-// extractJobID pulls the job ID from a task ID.
-// Convention: task IDs look like "jobID-map-0" or "jobID-reduce-2"
-func extractJobID(taskID string) string {
-	// Walk backwards past the last two "-" segments
-	// e.g. "job-1-map-0" → "job-1-map"  → stored as "job-1-map"
-	// We stored the job under jobID+"-map" / jobID+"-reduce"
-	for i := len(taskID) - 1; i >= 0; i-- {
-		if taskID[i] == '-' {
-			return taskID[:i]
-		}
-	}
-	return taskID
-}
-
-// -----------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------
 
@@ -310,7 +332,7 @@ func main() {
 	go func() {
 		time.Sleep(3 * time.Second)
 
-		// Split some text into chunks — one per map task
+		// Split some text into chunks - one per map task
 		lines := []string{
 			"the quick brown fox jumps over the lazy dog",
 			"the fox ran quickly over the hill",
@@ -324,7 +346,8 @@ func main() {
 			})
 		}
 
-		result, err := coordServer.MapReduceJob("job-1", chunks, "example-tasks/map.py", "example-tasks/reduce.py")
+		// Updated paths based on the new directory structure
+		result, err := coordServer.MapReduceJob("job-1", chunks, "../example-tasks/map.py", "../example-tasks/reduce.py")
 		if err != nil {
 			log.Printf("[Coordinator] Job failed: %v", err)
 			return
