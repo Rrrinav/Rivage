@@ -81,6 +81,7 @@ type ExecutorMessage struct {
 	//
 	//	*ExecutorMessage_Register
 	//	*ExecutorMessage_Result
+	//	*ExecutorMessage_Heartbeat
 	Payload       isExecutorMessage_Payload `protobuf_oneof:"payload"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -141,6 +142,15 @@ func (x *ExecutorMessage) GetResult() *TaskResult {
 	return nil
 }
 
+func (x *ExecutorMessage) GetHeartbeat() *Heartbeat {
+	if x != nil {
+		if x, ok := x.Payload.(*ExecutorMessage_Heartbeat); ok {
+			return x.Heartbeat
+		}
+	}
+	return nil
+}
+
 type isExecutorMessage_Payload interface {
 	isExecutorMessage_Payload()
 }
@@ -153,9 +163,15 @@ type ExecutorMessage_Result struct {
 	Result *TaskResult `protobuf:"bytes,2,opt,name=result,proto3,oneof"`
 }
 
+type ExecutorMessage_Heartbeat struct {
+	Heartbeat *Heartbeat `protobuf:"bytes,3,opt,name=heartbeat,proto3,oneof"` // NEW: Real-time telemetry
+}
+
 func (*ExecutorMessage_Register) isExecutorMessage_Payload() {}
 
 func (*ExecutorMessage_Result) isExecutorMessage_Payload() {}
+
+func (*ExecutorMessage_Heartbeat) isExecutorMessage_Payload() {}
 
 type RegistrationRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -217,6 +233,51 @@ func (x *RegistrationRequest) GetAvailableRam() int64 {
 	return 0
 }
 
+// NEW: Sent periodically by the worker to prove it is alive
+type Heartbeat struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	WorkerId      string                 `protobuf:"bytes,1,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Heartbeat) Reset() {
+	*x = Heartbeat{}
+	mi := &file_proto_system_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Heartbeat) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Heartbeat) ProtoMessage() {}
+
+func (x *Heartbeat) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_system_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Heartbeat.ProtoReflect.Descriptor instead.
+func (*Heartbeat) Descriptor() ([]byte, []int) {
+	return file_proto_system_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *Heartbeat) GetWorkerId() string {
+	if x != nil {
+		return x.WorkerId
+	}
+	return ""
+}
+
 type TaskResult struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	TaskId        string                 `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
@@ -231,7 +292,7 @@ type TaskResult struct {
 
 func (x *TaskResult) Reset() {
 	*x = TaskResult{}
-	mi := &file_proto_system_proto_msgTypes[2]
+	mi := &file_proto_system_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -243,7 +304,7 @@ func (x *TaskResult) String() string {
 func (*TaskResult) ProtoMessage() {}
 
 func (x *TaskResult) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_system_proto_msgTypes[2]
+	mi := &file_proto_system_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -256,7 +317,7 @@ func (x *TaskResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TaskResult.ProtoReflect.Descriptor instead.
 func (*TaskResult) Descriptor() ([]byte, []int) {
-	return file_proto_system_proto_rawDescGZIP(), []int{2}
+	return file_proto_system_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *TaskResult) GetTaskId() string {
@@ -314,7 +375,7 @@ type CoordinatorMessage struct {
 
 func (x *CoordinatorMessage) Reset() {
 	*x = CoordinatorMessage{}
-	mi := &file_proto_system_proto_msgTypes[3]
+	mi := &file_proto_system_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -326,7 +387,7 @@ func (x *CoordinatorMessage) String() string {
 func (*CoordinatorMessage) ProtoMessage() {}
 
 func (x *CoordinatorMessage) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_system_proto_msgTypes[3]
+	mi := &file_proto_system_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -339,7 +400,7 @@ func (x *CoordinatorMessage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CoordinatorMessage.ProtoReflect.Descriptor instead.
 func (*CoordinatorMessage) Descriptor() ([]byte, []int) {
-	return file_proto_system_proto_rawDescGZIP(), []int{3}
+	return file_proto_system_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *CoordinatorMessage) GetTask() *Task {
@@ -363,7 +424,7 @@ type Task struct {
 
 func (x *Task) Reset() {
 	*x = Task{}
-	mi := &file_proto_system_proto_msgTypes[4]
+	mi := &file_proto_system_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -375,7 +436,7 @@ func (x *Task) String() string {
 func (*Task) ProtoMessage() {}
 
 func (x *Task) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_system_proto_msgTypes[4]
+	mi := &file_proto_system_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -388,7 +449,7 @@ func (x *Task) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Task.ProtoReflect.Descriptor instead.
 func (*Task) Descriptor() ([]byte, []int) {
-	return file_proto_system_proto_rawDescGZIP(), []int{4}
+	return file_proto_system_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Task) GetTaskId() string {
@@ -437,15 +498,18 @@ var File_proto_system_proto protoreflect.FileDescriptor
 
 const file_proto_system_proto_rawDesc = "" +
 	"\n" +
-	"\x12proto/system.proto\x12\x06system\"\x85\x01\n" +
+	"\x12proto/system.proto\x12\x06system\"\xb8\x01\n" +
 	"\x0fExecutorMessage\x129\n" +
 	"\bregister\x18\x01 \x01(\v2\x1b.system.RegistrationRequestH\x00R\bregister\x12,\n" +
-	"\x06result\x18\x02 \x01(\v2\x12.system.TaskResultH\x00R\x06resultB\t\n" +
+	"\x06result\x18\x02 \x01(\v2\x12.system.TaskResultH\x00R\x06result\x121\n" +
+	"\theartbeat\x18\x03 \x01(\v2\x11.system.HeartbeatH\x00R\theartbeatB\t\n" +
 	"\apayload\"t\n" +
 	"\x13RegistrationRequest\x12\x1b\n" +
 	"\tworker_id\x18\x01 \x01(\tR\bworkerId\x12\x1b\n" +
 	"\tcpu_cores\x18\x02 \x01(\x05R\bcpuCores\x12#\n" +
-	"\ravailable_ram\x18\x03 \x01(\x03R\favailableRam\"\xc3\x01\n" +
+	"\ravailable_ram\x18\x03 \x01(\x03R\favailableRam\"(\n" +
+	"\tHeartbeat\x12\x1b\n" +
+	"\tworker_id\x18\x01 \x01(\tR\bworkerId\"\xc3\x01\n" +
 	"\n" +
 	"TaskResult\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x15\n" +
@@ -486,28 +550,30 @@ func file_proto_system_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_system_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_system_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_proto_system_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_proto_system_proto_goTypes = []any{
 	(TaskType)(0),               // 0: system.TaskType
 	(*ExecutorMessage)(nil),     // 1: system.ExecutorMessage
 	(*RegistrationRequest)(nil), // 2: system.RegistrationRequest
-	(*TaskResult)(nil),          // 3: system.TaskResult
-	(*CoordinatorMessage)(nil),  // 4: system.CoordinatorMessage
-	(*Task)(nil),                // 5: system.Task
+	(*Heartbeat)(nil),           // 3: system.Heartbeat
+	(*TaskResult)(nil),          // 4: system.TaskResult
+	(*CoordinatorMessage)(nil),  // 5: system.CoordinatorMessage
+	(*Task)(nil),                // 6: system.Task
 }
 var file_proto_system_proto_depIdxs = []int32{
 	2, // 0: system.ExecutorMessage.register:type_name -> system.RegistrationRequest
-	3, // 1: system.ExecutorMessage.result:type_name -> system.TaskResult
-	0, // 2: system.TaskResult.task_type:type_name -> system.TaskType
-	5, // 3: system.CoordinatorMessage.task:type_name -> system.Task
-	0, // 4: system.Task.task_type:type_name -> system.TaskType
-	1, // 5: system.Coordinator.RegisterAndStream:input_type -> system.ExecutorMessage
-	4, // 6: system.Coordinator.RegisterAndStream:output_type -> system.CoordinatorMessage
-	6, // [6:7] is the sub-list for method output_type
-	5, // [5:6] is the sub-list for method input_type
-	5, // [5:5] is the sub-list for extension type_name
-	5, // [5:5] is the sub-list for extension extendee
-	0, // [0:5] is the sub-list for field type_name
+	4, // 1: system.ExecutorMessage.result:type_name -> system.TaskResult
+	3, // 2: system.ExecutorMessage.heartbeat:type_name -> system.Heartbeat
+	0, // 3: system.TaskResult.task_type:type_name -> system.TaskType
+	6, // 4: system.CoordinatorMessage.task:type_name -> system.Task
+	0, // 5: system.Task.task_type:type_name -> system.TaskType
+	1, // 6: system.Coordinator.RegisterAndStream:input_type -> system.ExecutorMessage
+	5, // 7: system.Coordinator.RegisterAndStream:output_type -> system.CoordinatorMessage
+	7, // [7:8] is the sub-list for method output_type
+	6, // [6:7] is the sub-list for method input_type
+	6, // [6:6] is the sub-list for extension type_name
+	6, // [6:6] is the sub-list for extension extendee
+	0, // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_proto_system_proto_init() }
@@ -518,6 +584,7 @@ func file_proto_system_proto_init() {
 	file_proto_system_proto_msgTypes[0].OneofWrappers = []any{
 		(*ExecutorMessage_Register)(nil),
 		(*ExecutorMessage_Result)(nil),
+		(*ExecutorMessage_Heartbeat)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -525,7 +592,7 @@ func file_proto_system_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_system_proto_rawDesc), len(file_proto_system_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -8,6 +8,7 @@ Output (STDOUT): JSON { "word": count, ... }
 
 import json
 import sys
+import time
 
 
 def main():
@@ -21,6 +22,7 @@ def main():
             if word:
                 counts[word] = counts.get(word, 0) + 1
 
+    time.sleep(18)
     print(json.dumps(counts))
 
 

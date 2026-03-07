@@ -16,56 +16,78 @@ import (
 )
 
 const port = ":50051"
+const heartbeatTimeout = 10 * time.Second
 
 // -----------------------------------------------------------------
-// Job tracking
+// Job tracking & Fault Tolerance State Machine
 // -----------------------------------------------------------------
+
+type TaskStatus int
+
+const (
+	StatusPending TaskStatus = iota
+	StatusRunning
+	StatusCompleted
+)
 
 type TaskState struct {
-	result *pb.TaskResult
-	done   bool
+	task         *pb.Task
+	status       TaskStatus
+	workerID     string
+	dispatchedAt time.Time
+	result       *pb.TaskResult
 }
 
 type Job struct {
 	id         string
 	totalTasks int
-	tasks      map[string]*TaskState // task_id -> state
+	tasks      map[string]*TaskState
 	mu         sync.Mutex
 	allDone    chan struct{}
+	isDone     bool
 }
 
-func newJob(id string, taskIDs []string) *Job {
-	tasks := make(map[string]*TaskState, len(taskIDs))
-	for _, tid := range taskIDs {
-		tasks[tid] = &TaskState{}
+func newJob(id string, tasks []*pb.Task) *Job {
+	jobTasks := make(map[string]*TaskState, len(tasks))
+	for _, t := range tasks {
+		jobTasks[t.GetTaskId()] = &TaskState{
+			task:   t,
+			status: StatusPending,
+		}
 	}
 	return &Job{
 		id:         id,
-		totalTasks: len(taskIDs),
-		tasks:      tasks,
+		totalTasks: len(tasks),
+		tasks:      jobTasks,
 		allDone:    make(chan struct{}),
 	}
 }
 
-// recordResult stores a task result and closes allDone when every task is in.
 func (j *Job) recordResult(result *pb.TaskResult) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 
 	if state, ok := j.tasks[result.GetTaskId()]; ok {
-		state.result = result
-		state.done = true
-	}
-
-	for _, s := range j.tasks {
-		if !s.done {
-			return
+		if state.status != StatusCompleted {
+			state.result = result
+			state.status = StatusCompleted
 		}
 	}
-	close(j.allDone)
+
+	allCompleted := true
+	for _, s := range j.tasks {
+		if s.status != StatusCompleted {
+			allCompleted = false
+			break
+		}
+	}
+	
+	if allCompleted && !j.isDone {
+		j.isDone = true
+		close(j.allDone)
+	}
 }
 
-// results returns all TaskResult values in task-id order (stable for reassembly).
 func (j *Job) results() []*pb.TaskResult {
 	j.mu.Lock()
 	defer j.mu.Unlock()
@@ -76,6 +98,63 @@ func (j *Job) results() []*pb.TaskResult {
 	return out
 }
 
+// watchAndDispatch uses Worker Health to determine task failure
+func (j *Job) watchAndDispatch(s *coordinatorServer) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-j.allDone:
+			return 
+			
+		case <-ticker.C:
+			j.mu.Lock()
+			var pendingTasks []*TaskState
+
+			for _, state := range j.tasks {
+				// 1. Fault Tolerance Check: Is the worker assigned to this task still alive?
+				if state.status == StatusRunning {
+					lastSeenIntf, ok := s.workerHeartbeats.Load(state.workerID)
+					if !ok || time.Since(lastSeenIntf.(time.Time)) > heartbeatTimeout {
+						log.Printf("[Watchdog] ⚠️ Worker %s missed heartbeats. Marking Task %s as Pending.", state.workerID, state.task.GetTaskId())
+						state.status = StatusPending
+						state.workerID = "" 
+					}
+				}
+
+				// 2. Gather Pending Tasks
+				if state.status == StatusPending {
+					pendingTasks = append(pendingTasks, state)
+				}
+			}
+			j.mu.Unlock()
+
+			// 3. Dispatch Phase
+			for _, state := range pendingTasks {
+				workerID, ok := s.pickWorker()
+				if !ok {
+					break 
+				}
+
+				err := s.sendTask(workerID, state.task)
+				
+				j.mu.Lock()
+				if err == nil {
+					state.status = StatusRunning
+					state.workerID = workerID
+					state.dispatchedAt = time.Now()
+					log.Printf("[Coordinator] Dispatched task %s to %s", state.task.GetTaskId(), workerID)
+				} else {
+					log.Printf("[Coordinator] ❌ Failed to dispatch to %s: %v", workerID, err)
+					s.removeWorker(workerID)
+				}
+				j.mu.Unlock()
+			}
+		}
+	}
+}
+
 // -----------------------------------------------------------------
 // Coordinator server
 // -----------------------------------------------------------------
@@ -83,23 +162,21 @@ func (j *Job) results() []*pb.TaskResult {
 type coordinatorServer struct {
 	pb.UnimplementedCoordinatorServer
 
-	workerStreams sync.Map // workerID -> pb.Coordinator_RegisterAndStreamServer
-	jobs          sync.Map // jobID -> *Job
+	workerStreams    sync.Map // workerID -> pb.Coordinator_RegisterAndStreamServer
+	workerHeartbeats sync.Map // workerID -> time.Time (NEW)
+	jobs             sync.Map // jobID -> *Job
 
-	// Round-Robin scheduling state
 	workerList []string
 	rrMutex    sync.Mutex
 	rrIndex    int
 }
 
-// Helper to add a worker to the rotation
 func (s *coordinatorServer) addWorker(id string) {
 	s.rrMutex.Lock()
 	defer s.rrMutex.Unlock()
 	s.workerList = append(s.workerList, id)
 }
 
-// Helper to remove a worker from the rotation
 func (s *coordinatorServer) removeWorker(id string) {
 	s.rrMutex.Lock()
 	defer s.rrMutex.Unlock()
@@ -112,7 +189,6 @@ func (s *coordinatorServer) removeWorker(id string) {
 }
 
 func (s *coordinatorServer) RegisterAndStream(stream pb.Coordinator_RegisterAndStreamServer) error {
-	// First message must be registration
 	regMsg, err := stream.Recv()
 	if err != nil {
 		return err
@@ -128,19 +204,19 @@ func (s *coordinatorServer) RegisterAndStream(stream pb.Coordinator_RegisterAndS
 		workerID, regReq.Register.GetCpuCores(), p.Addr)
 
 	s.workerStreams.Store(workerID, stream)
+	s.workerHeartbeats.Store(workerID, time.Now()) // Initial heartbeat
 	s.addWorker(workerID)
 
-	// Clean up worker when they disconnect
 	defer func() {
 		s.workerStreams.Delete(workerID)
+		s.workerHeartbeats.Delete(workerID)
 		s.removeWorker(workerID)
 	}()
 
-	// Listen for results
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {
-			log.Printf("[Coordinator] Worker %s disconnected.", workerID)
+			log.Printf("[Coordinator] Worker %s cleanly disconnected.", workerID)
 			return nil
 		}
 		if err != nil {
@@ -148,23 +224,25 @@ func (s *coordinatorServer) RegisterAndStream(stream pb.Coordinator_RegisterAndS
 			return err
 		}
 
-		if resultMsg, ok := msg.GetPayload().(*pb.ExecutorMessage_Result); ok {
-			result := resultMsg.Result
+		// Handle incoming messages by type
+		switch payload := msg.GetPayload().(type) {
+		case *pb.ExecutorMessage_Heartbeat:
+			// Update the radar!
+			s.workerHeartbeats.Store(workerID, time.Now())
+			
+		case *pb.ExecutorMessage_Result:
+			result := payload.Result
 			log.Printf("[Coordinator] Result for Task %s from %s: success=%t",
 				result.GetTaskId(), workerID, result.GetSuccess())
 
-			// Route the result back to its job using the explicit job_id from protobuf
 			jobID := result.GetJobId()
 			if jobVal, ok := s.jobs.Load(jobID); ok {
 				jobVal.(*Job).recordResult(result)
-			} else {
-				log.Printf("[Coordinator] Warning: Job %s not found for task %s", jobID, result.GetTaskId())
 			}
 		}
 	}
 }
 
-// sendTask sends a single task to the given worker.
 func (s *coordinatorServer) sendTask(workerID string, task *pb.Task) error {
 	val, ok := s.workerStreams.Load(workerID)
 	if !ok {
@@ -174,72 +252,57 @@ func (s *coordinatorServer) sendTask(workerID string, task *pb.Task) error {
 	return stream.Send(&pb.CoordinatorMessage{Task: task})
 }
 
-// pickWorker returns the next available worker using Round-Robin scheduling.
 func (s *coordinatorServer) pickWorker() (string, bool) {
 	s.rrMutex.Lock()
 	defer s.rrMutex.Unlock()
 
-	if len(s.workerList) == 0 {
-		return "", false
+	// Before returning a worker, make sure they haven't ghosted us
+	for len(s.workerList) > 0 {
+		id := s.workerList[s.rrIndex%len(s.workerList)]
+		
+		lastSeenIntf, ok := s.workerHeartbeats.Load(id)
+		if ok && time.Since(lastSeenIntf.(time.Time)) <= heartbeatTimeout {
+			s.rrIndex++
+			return id, true
+		}
+		
+		// Worker is dead but hasn't fully disconnected yet, remove them
+		s.rrMutex.Unlock() // Unlock temporarily to call removeWorker safely
+		s.removeWorker(id)
+		s.rrMutex.Lock()   // Re-lock
 	}
 
-	id := s.workerList[s.rrIndex%len(s.workerList)]
-	s.rrIndex++
-	return id, true
+	return "", false
 }
 
 // -----------------------------------------------------------------
 // MapReduce orchestration
 // -----------------------------------------------------------------
 
-// MapReduceJob runs a full map -> reduce pipeline.
-//
-//	inputChunks  - one element per map task (each is JSON bytes for the map script)
-//	mapScript    - path to the Python map script   e.g. "/example-tasks/map.py"
-//	reduceScript - path to the Python reduce script e.g. "/example-tasks/reduce.py"
 func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, mapScript, reduceScript string) ([]byte, error) {
 
 	log.Printf("[Coordinator] [%s] Starting MAP phase (%d chunks)", jobID, len(inputChunks))
 
-	mapTaskIDs := make([]string, len(inputChunks))
-	for i := range inputChunks {
-		mapTaskIDs[i] = fmt.Sprintf("%s-map-%d", jobID, i)
-	}
-
-	mapJob := newJob(jobID+"-map", mapTaskIDs)
-	s.jobs.Store(mapJob.id, mapJob)
-
-	// Dispatch map tasks - wait for at least one worker
-	for {
-		_, ok := s.pickWorker()
-		if ok {
-			break
-		}
-		log.Println("[Coordinator] Waiting for a worker...")
-		time.Sleep(1 * time.Second)
-	}
-
+	var mapTasks []*pb.Task
 	for i, chunk := range inputChunks {
-		workerID, _ := s.pickWorker()
-		task := &pb.Task{
-			TaskId:    mapTaskIDs[i],
-			JobId:     mapJob.id,
+		mapTasks = append(mapTasks, &pb.Task{
+			TaskId:    fmt.Sprintf("%s-map-%d", jobID, i),
+			JobId:     jobID + "-map",
 			TaskType:  pb.TaskType_MAP,
 			Command:   "python3",
 			Args:      []string{mapScript},
 			InputData: chunk,
-		}
-		if err := s.sendTask(workerID, task); err != nil {
-			return nil, fmt.Errorf("failed to send map task %d: %w", i, err)
-		}
-		log.Printf("[Coordinator] Sent map task %s to %s", task.TaskId, workerID)
+		})
 	}
 
-	// Wait for all map tasks to finish
+	mapJob := newJob(jobID+"-map", mapTasks)
+	s.jobs.Store(mapJob.id, mapJob)
+
+	go mapJob.watchAndDispatch(s)
+
 	<-mapJob.allDone
 	log.Printf("[Coordinator] [%s] MAP phase complete.", jobID)
 
-	// Merge all map outputs into a single JSON object: { key: [v1,v2,...] }
 	merged := map[string][]interface{}{}
 	for _, result := range mapJob.results() {
 		if !result.GetSuccess() {
@@ -257,40 +320,28 @@ func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, map
 
 	log.Printf("[Coordinator] [%s] Starting REDUCE phase", jobID)
 
-	reduceTaskIDs := make([]string, 0, len(merged))
-	reduceInputs := make([][]byte, 0, len(merged))
-
+	var reduceTasks []*pb.Task
 	i := 0
 	for k, vals := range merged {
-		tid := fmt.Sprintf("%s-reduce-%d", jobID, i)
-		reduceTaskIDs = append(reduceTaskIDs, tid)
-
 		payload, _ := json.Marshal(map[string]interface{}{
 			"key":    k,
 			"values": vals,
 		})
-		reduceInputs = append(reduceInputs, payload)
-		i++
-	}
-
-	reduceJob := newJob(jobID+"-reduce", reduceTaskIDs)
-	s.jobs.Store(reduceJob.id, reduceJob)
-
-	for j, payload := range reduceInputs {
-		workerID, _ := s.pickWorker()
-		task := &pb.Task{
-			TaskId:    reduceTaskIDs[j],
-			JobId:     reduceJob.id,
+		reduceTasks = append(reduceTasks, &pb.Task{
+			TaskId:    fmt.Sprintf("%s-reduce-%d", jobID, i),
+			JobId:     jobID + "-reduce",
 			TaskType:  pb.TaskType_REDUCE,
 			Command:   "python3",
 			Args:      []string{reduceScript},
 			InputData: payload,
-		}
-		if err := s.sendTask(workerID, task); err != nil {
-			return nil, fmt.Errorf("failed to send reduce task %d: %w", j, err)
-		}
-		log.Printf("[Coordinator] Sent reduce task %s to %s", task.TaskId, workerID)
+		})
+		i++
 	}
+
+	reduceJob := newJob(jobID+"-reduce", reduceTasks)
+	s.jobs.Store(reduceJob.id, reduceJob)
+
+	go reduceJob.watchAndDispatch(s)
 
 	<-reduceJob.allDone
 	log.Printf("[Coordinator] [%s] REDUCE phase complete.", jobID)
@@ -312,10 +363,6 @@ func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, map
 	return json.MarshalIndent(final, "", "  ")
 }
 
-// -----------------------------------------------------------------
-// Main
-// -----------------------------------------------------------------
-
 func main() {
 	lis, err := net.Listen("tcp", port)
 	if err != nil {
@@ -328,11 +375,9 @@ func main() {
 
 	log.Printf("[Coordinator] Listening on %v", lis.Addr())
 
-	// Run a demo word-count job after workers connect
 	go func() {
 		time.Sleep(3 * time.Second)
 
-		// Split some text into chunks - one per map task
 		lines := []string{
 			"the quick brown fox jumps over the lazy dog",
 			"the fox ran quickly over the hill",
@@ -346,8 +391,7 @@ func main() {
 			})
 		}
 
-		// Updated paths based on the new directory structure
-		result, err := coordServer.MapReduceJob("job-1", chunks, "../example-tasks/map.py", "../example-tasks/reduce.py")
+		result, err := coordServer.MapReduceJob("job-1", chunks, "example-tasks/map.py", "example-tasks/reduce.py")
 		if err != nil {
 			log.Printf("[Coordinator] Job failed: %v", err)
 			return

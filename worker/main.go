@@ -21,18 +21,14 @@ const (
 	address = "localhost:50051"
 )
 
-// handleTask executes whatever command the coordinator sends.
-// Contract: input_data is piped to STDIN, STDOUT is captured as output.
-// The task doesn't have to be Python - any executable works.
 func handleTask(task *pb.Task) *pb.TaskResult {
 	log.Printf("[Worker] Received Task %s: %s %v", task.GetTaskId(), task.GetCommand(), task.GetArgs())
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// We no longer strictly need a 30s timeout here, but it's good practice for rogue scripts
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, task.GetCommand(), task.GetArgs()...)
-
-	// Pipe InputData -> STDIN of the subprocess
 	cmd.Stdin = bytes.NewReader(task.GetInputData())
 
 	var stdout, stderr bytes.Buffer
@@ -77,7 +73,6 @@ func main() {
 	}
 	log.Printf("[Worker] Connected to coordinator.")
 
-	// Generate a dynamic worker ID based on hostname and a timestamp
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "unknown-host"
@@ -97,10 +92,27 @@ func main() {
 	}
 	log.Printf("[Worker] Registered as %s (Cores: %d)", workerID, regReq.CpuCores)
 
-	// Channel to send results back without blocking the receive loop
+	// --- NEW: Heartbeat Goroutine ---
+	// This runs independently of the tasks, proving the worker process is alive
+	go func() {
+		ticker := time.NewTicker(3 * time.Second)
+		defer ticker.Stop()
+		for range ticker.C {
+			err := stream.Send(&pb.ExecutorMessage{
+				Payload: &pb.ExecutorMessage_Heartbeat{
+					Heartbeat: &pb.Heartbeat{WorkerId: workerID},
+				},
+			})
+			if err != nil {
+				log.Printf("[Worker] Heartbeat failed (coordinator might be down): %v", err)
+				return
+			}
+		}
+	}()
+	// --------------------------------
+
 	resultsChan := make(chan *pb.TaskResult, 10)
 
-	// Goroutine: sends results back to coordinator
 	go func() {
 		for result := range resultsChan {
 			log.Printf("[Worker] Sending result for Task %s...", result.GetTaskId())
@@ -112,7 +124,6 @@ func main() {
 		}
 	}()
 
-	// Main loop: receive tasks from coordinator
 	for {
 		msg, err := stream.Recv()
 		if err == io.EOF {
@@ -125,8 +136,6 @@ func main() {
 		}
 
 		task := msg.GetTask()
-
-		// Run each task in its own goroutine so we can handle multiple in parallel
 		go func(t *pb.Task) {
 			result := handleTask(t)
 			resultsChan <- result
