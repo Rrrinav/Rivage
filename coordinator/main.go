@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"os"
 	"sync"
 	"time"
 
@@ -117,7 +118,7 @@ func (j *Job) watchAndDispatch(s *coordinatorServer) {
 				if state.status == StatusRunning {
 					lastSeenIntf, ok := s.workerHeartbeats.Load(state.workerID)
 					if !ok || time.Since(lastSeenIntf.(time.Time)) > heartbeatTimeout {
-						log.Printf("[Watchdog] ⚠️ Worker %s missed heartbeats. Marking Task %s as Pending.", state.workerID, state.task.GetTaskId())
+						log.Printf("[Watchdog] [WARNING] Worker %s missed heartbeats. Marking Task %s as Pending.", state.workerID, state.task.GetTaskId())
 						state.status = StatusPending
 						state.workerID = "" 
 					}
@@ -146,7 +147,7 @@ func (j *Job) watchAndDispatch(s *coordinatorServer) {
 					state.dispatchedAt = time.Now()
 					log.Printf("[Coordinator] Dispatched task %s to %s", state.task.GetTaskId(), workerID)
 				} else {
-					log.Printf("[Coordinator] ❌ Failed to dispatch to %s: %v", workerID, err)
+					log.Printf("[Coordinator] [ERROR] Failed to dispatch to %s: %v", workerID, err)
 					s.removeWorker(workerID)
 				}
 				j.mu.Unlock()
@@ -229,6 +230,7 @@ func (s *coordinatorServer) RegisterAndStream(stream pb.Coordinator_RegisterAndS
 		case *pb.ExecutorMessage_Heartbeat:
 			// Update the radar!
 			s.workerHeartbeats.Store(workerID, time.Now())
+			log.Printf("[Coordinator] [Telemetry] Heartbeat received from %s", workerID)
 			
 		case *pb.ExecutorMessage_Result:
 			result := payload.Result
@@ -283,6 +285,16 @@ func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, map
 
 	log.Printf("[Coordinator] [%s] Starting MAP phase (%d chunks)", jobID, len(inputChunks))
 
+	// Read the actual source code from the coordinator's disk
+	mapCode, err := os.ReadFile(mapScript)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read map script: %v", err)
+	}
+	reduceCode, err := os.ReadFile(reduceScript)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read reduce script: %v", err)
+	}
+
 	var mapTasks []*pb.Task
 	for i, chunk := range inputChunks {
 		mapTasks = append(mapTasks, &pb.Task{
@@ -290,8 +302,9 @@ func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, map
 			JobId:     jobID + "-map",
 			TaskType:  pb.TaskType_MAP,
 			Command:   "python3",
-			Args:      []string{mapScript},
+			Args:      []string{"{CODE}"}, // The worker will substitute this placeholder
 			InputData: chunk,
+			Code:      mapCode, // Inject the script bytes dynamically
 		})
 	}
 
@@ -332,8 +345,9 @@ func (s *coordinatorServer) MapReduceJob(jobID string, inputChunks [][]byte, map
 			JobId:     jobID + "-reduce",
 			TaskType:  pb.TaskType_REDUCE,
 			Command:   "python3",
-			Args:      []string{reduceScript},
+			Args:      []string{"{CODE}"}, // The worker will substitute this placeholder
 			InputData: payload,
+			Code:      reduceCode, // Inject the script bytes dynamically
 		})
 		i++
 	}

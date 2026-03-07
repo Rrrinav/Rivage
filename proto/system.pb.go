@@ -418,6 +418,7 @@ type Task struct {
 	Command       string                 `protobuf:"bytes,4,opt,name=command,proto3" json:"command,omitempty"`
 	Args          []string               `protobuf:"bytes,5,rep,name=args,proto3" json:"args,omitempty"`
 	InputData     []byte                 `protobuf:"bytes,6,opt,name=input_data,json=inputData,proto3" json:"input_data,omitempty"`
+	Code          []byte                 `protobuf:"bytes,7,opt,name=code,proto3" json:"code,omitempty"` // NEW: The dynamic source code or binary
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -494,6 +495,13 @@ func (x *Task) GetInputData() []byte {
 	return nil
 }
 
+func (x *Task) GetCode() []byte {
+	if x != nil {
+		return x.Code
+	}
+	return nil
+}
+
 var File_proto_system_proto protoreflect.FileDescriptor
 
 const file_proto_system_proto_rawDesc = "" +
@@ -520,7 +528,7 @@ const file_proto_system_proto_rawDesc = "" +
 	"outputData\x12\x1b\n" +
 	"\terror_log\x18\x06 \x01(\tR\berrorLog\"6\n" +
 	"\x12CoordinatorMessage\x12 \n" +
-	"\x04task\x18\x01 \x01(\v2\f.system.TaskR\x04task\"\xb2\x01\n" +
+	"\x04task\x18\x01 \x01(\v2\f.system.TaskR\x04task\"\xc6\x01\n" +
 	"\x04Task\x12\x17\n" +
 	"\atask_id\x18\x01 \x01(\tR\x06taskId\x12\x15\n" +
 	"\x06job_id\x18\x02 \x01(\tR\x05jobId\x12-\n" +
@@ -528,7 +536,8 @@ const file_proto_system_proto_rawDesc = "" +
 	"\acommand\x18\x04 \x01(\tR\acommand\x12\x12\n" +
 	"\x04args\x18\x05 \x03(\tR\x04args\x12\x1d\n" +
 	"\n" +
-	"input_data\x18\x06 \x01(\fR\tinputData*,\n" +
+	"input_data\x18\x06 \x01(\fR\tinputData\x12\x12\n" +
+	"\x04code\x18\a \x01(\fR\x04code*,\n" +
 	"\bTaskType\x12\v\n" +
 	"\aUNKNOWN\x10\x00\x12\a\n" +
 	"\x03MAP\x10\x01\x12\n" +

@@ -24,11 +24,51 @@ const (
 func handleTask(task *pb.Task) *pb.TaskResult {
 	log.Printf("[Worker] Received Task %s: %s %v", task.GetTaskId(), task.GetCommand(), task.GetArgs())
 
+	// Write dynamic code to a temporary file if provided
+	var tempFilePath string
+	if len(task.GetCode()) > 0 {
+		tmpFile, err := os.CreateTemp("", "rivage-task-*")
+		if err != nil {
+			return &pb.TaskResult{
+				TaskId:   task.GetTaskId(),
+				JobId:    task.GetJobId(),
+				TaskType: task.GetTaskType(),
+				Success:  false,
+				ErrorLog: fmt.Sprintf("Failed to create temp code file: %v", err),
+			}
+		}
+		tmpFile.Write(task.GetCode())
+		tmpFile.Close()
+		
+		// Make the temporary file executable
+		os.Chmod(tmpFile.Name(), 0755)
+		tempFilePath = tmpFile.Name()
+		
+		// Crucial: Automatically delete the script when the task is done
+		defer os.Remove(tempFilePath)
+	}
+
+	// Substitute {CODE} with the actual temp file path
+	command := task.GetCommand()
+	var args []string
+	for _, arg := range task.GetArgs() {
+		if arg == "{CODE}" && tempFilePath != "" {
+			args = append(args, tempFilePath)
+		} else {
+			args = append(args, arg)
+		}
+	}
+	
+	// Optional: If the command itself is "EXEC_CODE", it means the code IS the binary executable
+	if command == "EXEC_CODE" && tempFilePath != "" {
+		command = tempFilePath
+	}
+
 	// We no longer strictly need a 30s timeout here, but it's good practice for rogue scripts
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, task.GetCommand(), task.GetArgs()...)
+	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Stdin = bytes.NewReader(task.GetInputData())
 
 	var stdout, stderr bytes.Buffer

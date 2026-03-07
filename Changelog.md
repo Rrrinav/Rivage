@@ -1,8 +1,30 @@
 # Change-log to track progress for report making
 
+## 5th commit
+
+> Implemented dynamic source code distribution over gRPC and telemetry logging.
+
+**Changes:**
+- **Protobuf Payload Upgrade**: Added a bytes code = 7; field to the Task message in system.proto to allow raw executable scripts or binaries to be transmitted directly over the network.
+- **Dynamic Code Injection (Coordinator)**: The Coordinator now reads the target execution scripts (e.g., map.py, reduce.py) from its local disk into memory and embeds the raw bytes into the outgoing gRPC tasks. It passes a "{CODE}" placeholder in the arguments list instead of relying on hardcoded paths.
+- **Ephemeral Execution (Worker)**: Workers no longer require any pre-installed task scripts on their local file systems. When a worker receives a task with an embedded code payload, it creates an ephemeral, executable temporary file (e.g., /tmp/rivage-task-*), substitutes the "{CODE}" placeholder with the generated file path, executes the process, and automatically deletes the temporary file upon completion to prevent disk bloat.
+- **Telemetry Logging**: Added explicit `[Telemetry]` tags to heartbeat logs in the Coordinator to improve visibility into cluster node health.
+
+
+## 4th commit
+
+> Implemented gRPC Heartbeat Telemetry for robust Worker node health tracking.
+
+**Changes:**
+- **Protobuf Telemetry**: Upgraded the system.proto contract by adding a Heartbeat message to the ExecutorMessage oneof payload, allowing workers to send real-time health pings without disrupting the task result streams.
+- **Worker Pulse Goroutine**: Workers now spawn a dedicated, lightweight background goroutine upon registration. This routine transmits a heartbeat to the Coordinator every 3 seconds, proving the process is alive independently of what tasks are currently executing.
+- **Coordinator Radar**: The Coordinator now maintains a thread-safe workerHeartbeats map to track the lastSeen timestamp of every active worker.
+- **Watchdog Refactor**: Completely decoupled Task Duration from Worker Health. The Watchdog no longer times out tasks after 15 seconds of execution. Instead, it checks if the assigned worker has missed its 10-second heartbeat window. This critical upgrade allows workers to process long-running, CPU-intensive tasks (like dense matrix multiplication) for hours without triggering false-positive failure recoveries.
+- **Verified**: Ran tasks with simulated 5-minute execution times. The Watchdog correctly kept the tasks in the Running state because the worker's heartbeat loop continued to ping. Killing the worker process immediately halted the heartbeats, triggering the Watchdog to re-queue the tasks exactly 10 seconds later.
+
 ## 3rd commit
 
-Refactored Protobuf contracts, added dynamic worker IDs, and implemented Round-Robin task scheduling.
+> Refactored Protobuf contracts, added dynamic worker IDs, and implemented Round-Robin task scheduling.
 
 **Changes:**
 - **Protobuf Contract Upgrade**: Removed the fragile string-parsing hack (extractJobID) by explicitly adding job_id and an enum TaskType (MAP, REDUCE) to both Task and TaskResult messages. Recompiled Protobuf files using the new build_proto.py script.
@@ -14,7 +36,7 @@ Refactored Protobuf contracts, added dynamic worker IDs, and implemented Round-R
 
 ## 2nd commit
 
-Implemented polyglot MapReduce pipeline using Python scripts as task executors.
+> Implemented polyglot MapReduce pipeline using Python scripts as task executors.
 
 **Changes**:
 - Worker now does real task execution using os/exec instead of fake sleep.
@@ -61,10 +83,10 @@ message Task {
 
 ## 1st commit
 
-Currently we only have a coordinator that and a worker script.
+> Currently we only have a coordinator that and a worker script.
 
-- In coordinator: We have a bi-directional stream which starts accepting client connections which can be a registeration request or a Task `result`
-- In worker: We connect to the worker and recieve messages which is just a `task`
+- **In coordinator**: We have a bi-directional stream which starts accepting client connections which can be a registeration request or a Task `result`
+- **In worker**: We connect to the worker and recieve messages which is just a `task`
 
 ```proto
 message TaskResult {

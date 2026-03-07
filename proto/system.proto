@@ -51,12 +51,13 @@ message CoordinatorMessage {
 }
 
 message Task {
-  string task_id = 1;
-  string job_id = 2;
-  TaskType task_type = 3;
-  string command = 4;
-  repeated string args = 5;
-  bytes input_data = 6;
+  string          task_id    = 1;
+  string          job_id     = 2;
+  TaskType        task_type  = 3;
+  string          command    = 4;
+  repeated string args       = 5;
+  bytes           input_data = 6;
+  bytes           code       = 7; // NEW: The dynamic source code or binary
 }
 
 // -----------------------------------------------------
