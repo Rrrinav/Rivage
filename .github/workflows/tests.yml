@@ -1,0 +1,37 @@
+name: Rivage CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: 'stable'
+        cache: true # Speeds up consecutive builds by caching Go modules
+
+    - name: Tidy and Verify Dependencies
+      run: |
+        go mod tidy
+        git diff --exit-code go.mod go.sum || (echo "go.mod/go.sum changed, please run 'go mod tidy' locally and commit the changes" && exit 1)
+
+    - name: Build Coordinator
+      run: go build -v ./cmd/coordinator/...
+
+    - name: Build Worker
+      run: go build -v ./cmd/worker/...
+
+    - name: Run Test Suite
+      # This mimics the exact test command from your build.py script
+      run: go test ./... -v -timeout 60s
