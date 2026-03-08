@@ -1,2 +1,5 @@
 report/Times New Roman Regular.ttf
 report/report.pdf
+bin/
+proto/rivage.pb.go
+proto/rivage_grpc.pb.go

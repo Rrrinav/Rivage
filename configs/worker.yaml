@@ -1,0 +1,34 @@
+# Rivage Worker Configuration
+
+coordinator:
+  # Address of the coordinator gRPC server
+  addr: "localhost:50051"
+  # How long to wait between reconnect attempts (with exponential backoff)
+  reconnect_interval: "5s"
+  # Maximum reconnect attempts. 0 = infinite (recommended for production)
+  max_reconnect_attempts: 0
+
+execution:
+  # Number of tasks to execute in parallel.
+  # 0 = automatically use runtime.NumCPU()
+  max_concurrent_tasks: 0
+  # How often to send heartbeats to the coordinator.
+  # Must be well below coordinator.scheduler.heartbeat_timeout.
+  heartbeat_interval: "3s"
+  # Directory for ephemeral code files (default: os.TempDir())
+  temp_dir: ""
+  # Per-task execution timeout. Overridden by per-stage config if set.
+  default_task_timeout: "5m"
+
+security:
+  # Must match coordinator's shared_secret if security.enabled = true
+  shared_secret: "change-me-in-production"
+  # Uncomment for mTLS:
+  # tls_cert_file: "certs/worker.crt"
+  # tls_key_file:  "certs/worker.key"
+  # tls_ca_file:   "certs/ca.crt"
+
+# Worker capability tags. The coordinator can target tasks to workers with
+# specific tags. Examples: ["gpu", "high-mem", "fast-disk", "zone-eu"]
+tags: []
+

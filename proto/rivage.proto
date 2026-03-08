@@ -1,0 +1,128 @@
+syntax = "proto3";
+package rivage;
+option go_package = "rivage/proto";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum TaskType {
+  TASK_TYPE_UNKNOWN = 0;
+  TASK_TYPE_MAP     = 1;
+  TASK_TYPE_REDUCE  = 2;
+  TASK_TYPE_GENERIC = 3;
+}
+
+enum TaskStatus {
+  TASK_STATUS_PENDING   = 0;
+  TASK_STATUS_RUNNING   = 1;
+  TASK_STATUS_COMPLETED = 2;
+  TASK_STATUS_FAILED    = 3;
+}
+
+enum WorkerState {
+  WORKER_STATE_IDLE     = 0;
+  WORKER_STATE_BUSY     = 1;
+  WORKER_STATE_DRAINING = 2;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Worker → Coordinator messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message WorkerCapabilities {
+  string   worker_id    = 1;
+  int32    cpu_cores    = 2;
+  int64    memory_bytes = 3;
+  string   hostname     = 4;
+  string   version      = 5;
+  repeated string tags  = 6;
+  string   worker_token = 7; // HMAC auth token
+}
+
+message Heartbeat {
+  string      worker_id      = 1;
+  WorkerState state          = 2;
+  int32       active_tasks   = 3;
+  float       cpu_usage      = 4;
+  int64       memory_used    = 5;
+  int64       timestamp_unix = 6;
+}
+
+message DrainRequest {
+  string worker_id = 1;
+  string reason    = 2;
+}
+
+message WorkerMessage {
+  oneof payload {
+    WorkerCapabilities register  = 1;
+    TaskResult         result    = 2;
+    Heartbeat          heartbeat = 3;
+    DrainRequest       drain     = 4;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coordinator → Worker messages
+// ─────────────────────────────────────────────────────────────────────────────
+
+message TaskSpec {
+  string            task_id         = 1;
+  string            job_id          = 2;
+  string            stage_id        = 3;
+  TaskType          task_type       = 4;
+  string            command         = 5;
+  repeated string   args            = 6;
+  bytes             input_data      = 7;
+  bytes             code            = 8;
+  map<string,string> env            = 9;
+  int64             timeout_seconds = 10;
+  int32             max_retries     = 11;
+  int32             retry_count     = 12;
+  repeated string   required_tags   = 13;
+}
+
+message TaskResult {
+  string     task_id     = 1;
+  string     job_id      = 2;
+  string     stage_id    = 3;
+  TaskStatus status      = 4;
+  bytes      output_data = 5;
+  string     error_log   = 6;
+  int64      duration_ms = 7;
+  string     worker_id   = 8;
+}
+
+message AckRegistration {
+  bool   accepted   = 1;
+  string message    = 2;
+  string auth_token = 3;
+}
+
+message DrainCommand {
+  string reason = 1;
+}
+
+message CancelTask {
+  string task_id = 1;
+  string reason  = 2;
+}
+
+message CoordinatorMessage {
+  oneof payload {
+    TaskSpec        task   = 1;
+    AckRegistration ack    = 2;
+    DrainCommand    drain  = 3;
+    CancelTask      cancel = 4;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Service
+// ─────────────────────────────────────────────────────────────────────────────
+
+service WorkerService {
+  // Single bidirectional stream: worker registers, receives tasks, sends results
+  rpc Connect(stream WorkerMessage) returns (stream CoordinatorMessage);
+}

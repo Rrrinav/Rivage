@@ -1,5 +1,37 @@
 # Change-log to track progress for report making
 
+## 6th commit
+
+> Complete V2 Architectural Refactor: Enterprise-grade DAG pipelines, Pluggable Schedulers, Security, and Distributed Matrix Multiplication.
+
+**Changes:**
+
+1. **Standard Go Project Layout**: Completely restructured the repository to follow industry-standard Go directory patterns.
+    - **`cmd/`**: Thin entry points for compiling coordinator and worker binaries.
+    - **`pkg/`**: Reusable, imported core library packages.
+    - **`configs/`**: YAML-based quantitative configuration separation.
+    - **`examples/`**: Implementation payloads (WordCount, MatMul).
+2. **Directed Acyclic Graph (DAG) Pipeline Engine (pkg/dag):**
+    - Replaced the hardcoded, inflexible MapReduce logic with a fluent Domain Specific Language (DSL) for building arbitrary execution pipelines.
+    - Implemented Topological Sorting (Kahn's Algorithm) to automatically calculate execution order and guarantee deadlock-free resolution of stage dependencies.
+    - Introduced programmable ShuffleFunc interfaces (e.g., JSONKeyGroupShuffle, PassThroughShuffle) to dictate how data flows between execution stages.
+3. **Pluggable Scheduling & Backpressure (pkg/scheduler):**
+    - **Abstracted worker selection into a decoupled Scheduler interface.**
+    - **Implemented three distinct routing algorithms**: RoundRobin, LeastLoaded, and TagAffinity.
+    - **Introduced Capacity-Aware Backpressure**: The scheduler dynamically tracks the ActiveTasks and CPUUsage of each worker node. It prevents "firehose" bottlenecks by holding tasks in a Pending state if a worker's concurrency limits (based on runtime CPU cores) are maxed out.
+4. **Security & Telemetry Layers (pkg/security, pkg/telemetry):**
+    - Engineered an HMAC-SHA256 token issuance and verification system to prevent unauthorized nodes from joining the cluster.
+    - Added foundational support for mutual TLS (mTLS) certificate verification on the gRPC streams.
+    - Built a concurrency-safe, leveled logger.
+    - Implemented Prometheus-compatible atomic counters and gauges (e.g., TasksDispatched, ActiveWorkers) exposed via a dedicated HTTP admin API (:8080/metrics).
+5. **Distributed Matrix Multiplication (examples/matmul):**
+    - Successfully proved the dynamic code-injection architecture by distributing heavy linear algebra.
+    - The coordinator mathematically chunks a dense 400x400 Matrix into 16 independent 100x100 tiles.
+    - It ships raw python3 calculation scripts over the gRPC wire to ephemeral worker nodes.
+    - Workers compute the sub-matrices via local OS sub-processes and return the JSON results to a final Reduce stage, which assembles the complete matrix in ~3.5 seconds.
+6. Build Automation (build.py):
+    - Developed a comprehensive Python orchestrator to manage go mod tidy, Protobuf compilation (protoc), binary compilation, and parallel multi-node local cluster simulation (./build.py run 4).
+
 ## 5th commit
 
 > Implemented dynamic source code distribution over gRPC and telemetry logging.

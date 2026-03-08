@@ -1,0 +1,43 @@
+# Rivage Coordinator Configuration
+# Quantitative settings go here. Logical/structural pipeline config is in Go.
+
+server:
+  # gRPC address for worker connections
+  grpc_addr: ":50051"
+  # HTTP address for the admin/status/metrics API
+  http_addr: ":8080"
+  # Maximum number of jobs allowed to run concurrently
+  max_concurrent_jobs: 50
+
+security:
+  # Set to true to enable HMAC token auth + optional mTLS
+  enabled: false
+  # HMAC-SHA256 shared secret. Workers must have the same value.
+  # IMPORTANT: in production load this from an env var or secrets manager,
+  # never commit a real secret to source control.
+  shared_secret: "change-me-in-production"
+  # Uncomment for mTLS:
+  # tls_cert_file: "certs/coordinator.crt"
+  # tls_key_file:  "certs/coordinator.key"
+  # tls_ca_file:   "certs/ca.crt"
+
+scheduler:
+  # Worker selection algorithm: round_robin | least_loaded | tag_affinity
+  # algorithm: "least_loaded"
+  algorithm: "round_robin"
+  # How long without a heartbeat before a worker is considered dead.
+  # Failing tasks assigned to dead workers are automatically re-queued.
+  heartbeat_timeout: "10s"
+  # Default per-task execution timeout (overridable per-stage in Go config).
+  task_timeout: "5m"
+  # How often the watchdog scans for stuck tasks.
+  watchdog_interval: "1s"
+  # How many times a failed task is retried before being marked permanently failed.
+  max_global_retries: 3
+
+telemetry:
+  # Prometheus-compatible metrics endpoint (served on http_addr/metrics)
+  metrics_addr: ""
+  # Log level: debug | info | warn | error
+  log_level: "info"
+
