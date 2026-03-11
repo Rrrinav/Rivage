@@ -11,10 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Coordinator config
-// ─────────────────────────────────────────────────────────────────────────────
-
 type CoordinatorConfig struct {
 	Server    ServerConfig    `yaml:"server"`
 	Security  SecurityConfig  `yaml:"security"`
@@ -50,9 +47,7 @@ type TelemetryConfig struct {
 	LogLevel    string `yaml:"log_level"`
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Worker config
-// ─────────────────────────────────────────────────────────────────────────────
 
 type WorkerConfig struct {
 	Coordinator WorkerCoordinatorConfig `yaml:"coordinator"`
@@ -82,9 +77,7 @@ type WorkerSecurityConfig struct {
 	TLSCAFile    string `yaml:"tls_ca_file"`
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Duration: yaml/json-serialisable time.Duration
-// ─────────────────────────────────────────────────────────────────────────────
 
 type Duration struct{ time.Duration }
 
@@ -111,10 +104,7 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Loaders
-// ─────────────────────────────────────────────────────────────────────────────
-
 func LoadCoordinatorConfig(path string) (*CoordinatorConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -190,4 +180,3 @@ func (c *WorkerConfig) validate() error {
 	}
 	return nil
 }
-

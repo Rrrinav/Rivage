@@ -1,102 +1,139 @@
-// matmul_job.go demonstrates how to use Rivage for distributed matrix
-// multiplication — faster than single-node because each tile is computed in
-// parallel across workers.
 package matmul
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
+	"net/http"
+	"sort"
 	"time"
 
 	"rivage/pkg/coordinator"
 	"rivage/pkg/dag"
 )
 
+const dataStoreURL = "http://localhost:8081/data"
+
 // MatrixJob runs a distributed matrix multiplication C = A x B.
-// Both matrices must be square with dimension n.
-// tileSize controls how large each sub-problem is (typically 64-256).
-func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]float64, tileSize int) ([][]float64, error) {
+func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]float64, tileSize int) (string, error) {
 	n := len(A)
 	if n == 0 {
-		return nil, fmt.Errorf("empty matrix")
+		return "", fmt.Errorf("empty matrix")
 	}
 
-	// ── Pipeline definition ──────────────────────────────────────────────────
-	//
-	// Stage 1 (map):    tile_multiply — each task computes one output tile
-	// Stage 2 (reduce): assemble    — one task assembles the final matrix
-	//
+	log.Printf("[matmul] Uploading dense binary matrices to Data Store...")
+	if err := uploadMatrix(A, dataStoreURL+"/A.bin"); err != nil {
+		return "", fmt.Errorf("failed to upload A: %w", err)
+	}
+	if err := uploadMatrix(B, dataStoreURL+"/B.bin"); err != nil {
+		return "", fmt.Errorf("failed to upload B: %w", err)
+	}
+
 	pipeline, err := dag.New("matmul").
 		Stage("tile_multiply",
 			dag.ScriptExecutor("python3", "examples/matmul/tile_multiply.py"),
-			dag.WithParallelism(0), // unlimited — one goroutine per tile
 		).
-		Stage("assemble",
+		Stage("assemble_row",
 			dag.ScriptExecutor("python3", "examples/matmul/assemble.py"),
-			dag.WithShuffle(dag.PassThroughShuffle()), // all tiles -> one assembler
-			dag.WithParallelism(1),
+			dag.WithShuffle(rowBandShuffle),
 		).
 		Build()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	// ── Create input chunks: one chunk per output tile ───────────────────────
-	chunks := makeTileChunks(A, B, n, tileSize)
-	log.Printf("[matmul] %dx%d matrix, tile_size=%d -> %d tiles", n, n, tileSize, len(chunks))
-
+	chunks := makeTileMetadata(dataStoreURL+"/A.bin", dataStoreURL+"/B.bin", n, tileSize)
 	jobID := fmt.Sprintf("matmul-%d", time.Now().UnixMilli())
-	result, err := coord.RunJob(ctx, jobID, pipeline, chunks)
+	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	// ── Parse assembled result ───────────────────────────────────────────────
-	var resp struct {
-		Matrix [][]float64 `json:"matrix"`
-	}
-	if err := json.Unmarshal(result, &resp); err != nil {
-		return nil, fmt.Errorf("parsing result: %w (raw: %s)", err, string(result))
-	}
-	return resp.Matrix, nil
+	return aggregateFinalMetadata(outputs, n)
 }
 
-// makeTileChunks partitions A and B into tiles and creates one input chunk
-// per output tile position (tile_row, tile_col).
-func makeTileChunks(A, B [][]float64, n, tileSize int) [][]byte {
+func rowBandShuffle(outputs []dag.TaskOutput) (dag.ShuffleResult, error) {
+	rowGroups := make(map[int][]json.RawMessage)
+	var totalIO, totalCompute float64
+
+	for _, out := range outputs {
+		var meta struct {
+			TileRow     int     `json:"tile_row"`
+			IOTime      float64 `json:"io_time"`
+			ComputeTime float64 `json:"compute_time"`
+		}
+		if err := json.Unmarshal(out.Data, &meta); err != nil {
+			return nil, err
+		}
+		totalIO += meta.IOTime
+		totalCompute += meta.ComputeTime
+		rowGroups[meta.TileRow] = append(rowGroups[meta.TileRow], out.Data)
+	}
+
+	log.Printf("[matmul] MAP Phase -> Aggregate I/O: %.2fs | Compute: %.2fs", totalIO, totalCompute)
+
+	res := make(dag.ShuffleResult)
+	for row, tiles := range rowGroups {
+		payload, _ := json.Marshal(map[string]interface{}{
+			"row":        row,
+			"tiles":      tiles,
+			"upload_url": fmt.Sprintf("%s/row_%d.bin", dataStoreURL, row),
+		})
+		res[fmt.Sprintf("assemble-row-%d", row)] = payload
+	}
+	return res, nil
+}
+
+func aggregateFinalMetadata(outputs []dag.TaskOutput, n int) (string, error) {
+	type band struct {
+		Row         int     `json:"row"`
+		Rows        int     `json:"rows"`
+		Cols        int     `json:"cols"`
+		URL         string  `json:"url"`
+		IOTime      float64 `json:"io_time"`
+		ComputeTime float64 `json:"compute_time"`
+	}
+	var bands []band
+	var totalIO, totalCompute float64
+
+	for _, out := range outputs {
+		var b band
+		if err := json.Unmarshal(out.Data, &b); err != nil {
+			return "", err
+		}
+		bands = append(bands, b)
+		totalIO += b.IOTime
+		totalCompute += b.ComputeTime
+	}
+	
+	log.Printf("[matmul] REDUCE Phase -> Aggregate I/O: %.2fs | Compute: %.2fs", totalIO, totalCompute)
+	sort.Slice(bands, func(i, j int) bool { return bands[i].Row < bands[j].Row })
+
+	summary, _ := json.MarshalIndent(map[string]interface{}{
+		"status": "success",
+		"dimensions": fmt.Sprintf("%dx%d", n, n),
+		"aggregate_io_sec": totalIO,
+		"aggregate_compute_sec": totalCompute,
+		"final_output_urls": bands,
+	}, "", "  ")
+	return string(summary), nil
+}
+
+func makeTileMetadata(aUrl, bUrl string, n, tileSize int) [][]byte {
 	var chunks [][]byte
-	for tileRow := 0; tileRow*tileSize < n; tileRow++ {
-		for tileCol := 0; tileCol*tileSize < n; tileCol++ {
-			rStart := tileRow * tileSize
-			rEnd := min(rStart+tileSize, n)
-
-			cStart := tileCol * tileSize
-			cEnd := min(cStart+tileSize, n)
-
-			// A tile: rows [rStart:rEnd], all K columns
-			aTile := make([][]float64, rEnd-rStart)
-			for i := rStart; i < rEnd; i++ {
-				aTile[i-rStart] = A[i]
-			}
-
-			// B tile: all K rows, cols [cStart:cEnd]
-			bTile := make([][]float64, n)
-			for k := 0; k < n; k++ {
-				row := make([]float64, cEnd-cStart)
-				for j := cStart; j < cEnd; j++ {
-					row[j-cStart] = B[k][j]
-				}
-				bTile[k] = row
-			}
-
+	for tr := 0; tr*tileSize < n; tr++ {
+		for tc := 0; tc*tileSize < n; tc++ {
+			rs, re := tr*tileSize, min((tr+1)*tileSize, n)
+			cs, ce := tc*tileSize, min((tc+1)*tileSize, n)
 			payload, _ := json.Marshal(map[string]interface{}{
-				"a_tile":   aTile,
-				"b_tile":   bTile,
-				"tile_row": tileRow,
-				"tile_col": tileCol,
+				"a_url": aUrl, "b_url": bUrl, "total_n": n,
+				"tile_row": tr, "tile_col": tc,
+				"r_start": rs, "r_end": re, "c_start": cs, "c_end": ce,
+				"upload_url": fmt.Sprintf("%s/tile_%d_%d.bin", dataStoreURL, tr, tc),
 			})
 			chunks = append(chunks, payload)
 		}
@@ -104,21 +141,27 @@ func makeTileChunks(A, B [][]float64, n, tileSize int) [][]byte {
 	return chunks
 }
 
-// RandomMatrix generates an nxn matrix of random float64 values.
+func uploadMatrix(m [][]float64, url string) error {
+	buf := new(bytes.Buffer)
+	for _, row := range m {
+		for _, val := range row {
+			binary.Write(buf, binary.LittleEndian, val)
+		}
+	}
+	req, _ := http.NewRequest(http.MethodPut, url, buf)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil { return err }
+	resp.Body.Close()
+	return nil
+}
+
 func RandomMatrix(n int) [][]float64 {
 	m := make([][]float64, n)
 	for i := range m {
 		m[i] = make([]float64, n)
-		for j := range m[i] {
-			m[i][j] = rand.Float64()*2 - 1 // [-1, 1)
-		}
+		for j := range m[i] { m[i][j] = rand.Float64()*2 - 1 }
 	}
 	return m
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
+func min(a, b int) int { if a < b { return a }; return b }

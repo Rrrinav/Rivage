@@ -3,7 +3,6 @@
 // Usage:
 //
 //	worker -config worker.yaml
-//
 package main
 
 import (

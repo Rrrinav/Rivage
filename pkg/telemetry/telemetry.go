@@ -11,10 +11,7 @@ import (
 	"time"
 )
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Logger
-// ─────────────────────────────────────────────────────────────────────────────
-
 type Level int32
 
 const (
@@ -96,24 +93,21 @@ func formatFields(fields []interface{}) string {
 	return sb.String()
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Metrics (in-process counters — swap for Prometheus in production)
-// ─────────────────────────────────────────────────────────────────────────────
-
 // Counter is a monotonically increasing counter.
 type Counter struct{ v atomic.Int64 }
 
-func (c *Counter) Inc()           { c.v.Add(1) }
-func (c *Counter) Add(n int64)    { c.v.Add(n) }
-func (c *Counter) Load() int64    { return c.v.Load() }
+func (c *Counter) Inc()        { c.v.Add(1) }
+func (c *Counter) Add(n int64) { c.v.Add(n) }
+func (c *Counter) Load() int64 { return c.v.Load() }
 
 // Gauge is a value that can go up or down.
 type Gauge struct{ v atomic.Int64 }
 
-func (g *Gauge) Set(n int64)   { g.v.Store(n) }
-func (g *Gauge) Inc()          { g.v.Add(1) }
-func (g *Gauge) Dec()          { g.v.Add(-1) }
-func (g *Gauge) Load() int64   { return g.v.Load() }
+func (g *Gauge) Set(n int64) { g.v.Store(n) }
+func (g *Gauge) Inc()        { g.v.Add(1) }
+func (g *Gauge) Dec()        { g.v.Add(-1) }
+func (g *Gauge) Load() int64 { return g.v.Load() }
 
 // Metrics holds cluster-wide counters.
 type Metrics struct {
@@ -126,4 +120,3 @@ type Metrics struct {
 }
 
 var Global = &Metrics{}
-

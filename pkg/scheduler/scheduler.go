@@ -7,23 +7,17 @@ import (
 	"time"
 )
 
-// ─────────────────────────────────────────────────────────────────────────────
 // WorkerSnapshot — the scheduler's view of a worker
-// ─────────────────────────────────────────────────────────────────────────────
-
 // WorkerSnapshot is a point-in-time view of a worker, safe to read without locks.
 type WorkerSnapshot struct {
-	ID           string
-	Tags         []string
-	ActiveTasks  int
-	CPUUsage     float32
+	ID            string
+	Tags          []string
+	ActiveTasks   int
+	CPUUsage      float32
 	LastHeartbeat time.Time
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Scheduler interface
-// ─────────────────────────────────────────────────────────────────────────────
-
 // Scheduler picks the best worker for a given task.
 type Scheduler interface {
 	// Pick selects a worker from the provided snapshot list.
@@ -32,10 +26,7 @@ type Scheduler interface {
 	Pick(workers []WorkerSnapshot, requiredTags []string) (string, error)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Round-robin
-// ─────────────────────────────────────────────────────────────────────────────
-
 type roundRobin struct {
 	mu  sync.Mutex
 	idx int
@@ -55,10 +46,7 @@ func (r *roundRobin) Pick(workers []WorkerSnapshot, required []string) (string, 
 	return id, nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Least-loaded (fewest active tasks, then lowest CPU usage)
-// ─────────────────────────────────────────────────────────────────────────────
-
 type leastLoaded struct{}
 
 func NewLeastLoaded() Scheduler { return &leastLoaded{} }
@@ -79,9 +67,7 @@ func (l *leastLoaded) Pick(workers []WorkerSnapshot, required []string) (string,
 	return best.ID, nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Tag-affinity (best tag overlap, then least loaded)
-// ─────────────────────────────────────────────────────────────────────────────
 
 type tagAffinity struct{}
 
@@ -120,10 +106,7 @@ func tagScore(w WorkerSnapshot, required []string) int {
 	return score
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Factory
-// ─────────────────────────────────────────────────────────────────────────────
-
 // New creates a Scheduler by name.
 func New(algorithm string) (Scheduler, error) {
 	switch algorithm {
@@ -138,10 +121,7 @@ func New(algorithm string) (Scheduler, error) {
 	}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
 func filterByTags(workers []WorkerSnapshot, required []string) []WorkerSnapshot {
 	if len(required) == 0 {
 		return workers
@@ -167,4 +147,3 @@ func hasAllTags(workerTags, required []string) bool {
 	}
 	return true
 }
-

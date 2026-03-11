@@ -14,10 +14,7 @@ import (
 	"time"
 )
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Token auth
-// ─────────────────────────────────────────────────────────────────────────────
-
 // TokenSigner issues and verifies HMAC-SHA256 signed tokens for worker auth.
 type TokenSigner struct {
 	secret []byte
@@ -76,10 +73,7 @@ func GenerateSecret(bytes int) (string, error) {
 	return hex.EncodeToString(b), nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // TLS helpers
-// ─────────────────────────────────────────────────────────────────────────────
-
 // LoadServerTLS loads a server TLS config with optional mutual TLS.
 // If caFile is non-empty, client certificates are required and verified.
 func LoadServerTLS(certFile, keyFile, caFile string) (*tls.Config, error) {
@@ -134,4 +128,3 @@ func LoadClientTLS(certFile, keyFile, caFile string) (*tls.Config, error) {
 	}
 	return cfg, nil
 }
-

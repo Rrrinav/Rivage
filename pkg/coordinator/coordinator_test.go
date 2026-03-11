@@ -18,7 +18,6 @@ func TestWordCountEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	// ── Coordinator ──────────────────────────────────────────────────────────
 	coordCfg := &config.CoordinatorConfig{
 		Server: config.ServerConfig{
 			GRPCAddr:          ":0",
@@ -52,7 +51,6 @@ func TestWordCountEndToEnd(t *testing.T) {
 	addr := <-addrCh
 	t.Logf("Coordinator listening on %s", addr)
 
-	// ── Workers ──────────────────────────────────────────────────────────────
 	for i := 0; i < 2; i++ {
 		workerCfg := &config.WorkerConfig{
 			Coordinator: config.WorkerCoordinatorConfig{
@@ -75,7 +73,6 @@ func TestWordCountEndToEnd(t *testing.T) {
 	// Give workers time to connect and register
 	time.Sleep(800 * time.Millisecond)
 
-	// ── Pipeline ─────────────────────────────────────────────────────────────
 	pipeline, err := dag.New("test-word-count").
 		Stage("map",
 			dag.BinaryExecutor("python3", "-c", mapScript),
@@ -89,7 +86,6 @@ func TestWordCountEndToEnd(t *testing.T) {
 		t.Fatalf("pipeline.Build: %v", err)
 	}
 
-	// ── Input ─────────────────────────────────────────────────────────────────
 	lines := []string{
 		"the quick brown fox",
 		"the fox ran away",
@@ -100,7 +96,6 @@ func TestWordCountEndToEnd(t *testing.T) {
 		chunks[i], _ = json.Marshal(map[string]interface{}{"chunk": []string{l}})
 	}
 
-	// ── Run ───────────────────────────────────────────────────────────────────
 	result, err := coord.RunJob(ctx, "test-job-1", pipeline, chunks)
 	if err != nil {
 		t.Fatalf("RunJob: %v", err)
@@ -113,7 +108,6 @@ func TestWordCountEndToEnd(t *testing.T) {
 
 	t.Logf("Word counts: %v", counts)
 
-	// ── Assert ────────────────────────────────────────────────────────────────
 	expected := map[string]int{
 		"the": 2, "quick": 2, "brown": 2, "fox": 2,
 		"ran": 1, "away": 1, "a": 1, "dog": 1,
@@ -200,10 +194,7 @@ func TestSchedulerAlgorithms(t *testing.T) {
 	}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Inline Python scripts
-// ─────────────────────────────────────────────────────────────────────────────
-
 const mapScript = `
 import json, sys, re
 data = json.load(sys.stdin)

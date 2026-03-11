@@ -1,51 +1,61 @@
 #!/usr/bin/env python3
-"""
-Rivage map task: matrix multiplication tiling.
+import sys
+import os
+import json
+import urllib.request
+import numpy as np
+import time
 
-This script does the actual tile-level dot product computation.
+WORKER_DATA_DIR = "./rivage_worker_data"
 
-Input (STDIN): JSON {
-    "a_tile": [[...], ...],   # submatrix of A (rows_per_tile × K)
-    "b_tile": [[...], ...],   # submatrix of B (K × cols_per_tile)
-    "tile_row": <int>,         # which output tile row
-    "tile_col": <int>          # which output tile col
-}
-Output (STDOUT): JSON {
-    "tile_row": <int>,
-    "tile_col": <int>,
-    "result_tile": [[...], ...]   # partial result for this tile
-}
-"""
-import json, sys
 
-def matmul(A, B):
-    rows_a = len(A)
-    cols_a = len(A[0])
-    cols_b = len(B[0])
-    C = [[0.0] * cols_b for _ in range(rows_a)]
-    for i in range(rows_a):
-        for k in range(cols_a):
-            if A[i][k] == 0:
-                continue
-            for j in range(cols_b):
-                C[i][j] += A[i][k] * B[k][j]
-    return C
+def download_file(url, local_path):
+    if not os.path.exists(local_path):
+        urllib.request.urlretrieve(url, local_path)
+
+
+def upload_file(url, local_path):
+    with open(local_path, 'rb') as f:
+        req = urllib.request.Request(url, data=f, method='PUT')
+        urllib.request.urlopen(req)
+
 
 def main():
-    data = json.load(sys.stdin)
-    a_tile  = data["a_tile"]
-    b_tile  = data["b_tile"]
-    tile_row = data["tile_row"]
-    tile_col = data["tile_col"]
+    os.makedirs(WORKER_DATA_DIR, exist_ok=True)
+    config = json.load(sys.stdin)
+    tr, tc, n = config["tile_row"], config["tile_col"], config["total_n"]
 
-    result_tile = matmul(a_tile, b_tile)
+    a_local = os.path.join(WORKER_DATA_DIR, "A.bin")
+    b_local = os.path.join(WORKER_DATA_DIR, "B.bin")
+    out_local = os.path.join(WORKER_DATA_DIR, f"out_{tr}_{tc}.bin")
+
+    t0 = time.time()
+    download_file(config["a_url"], a_local)
+    download_file(config["b_url"], b_local)
+    io_time = time.time() - t0
+
+    A = np.memmap(a_local, dtype=np.float64, mode='r', shape=(n, n))
+    B = np.memmap(b_local, dtype=np.float64, mode='r', shape=(n, n))
+
+    t0 = time.time()
+    c_tile = np.dot(A[config["r_start"]:config["r_end"], :],
+                    B[:, config["c_start"]:config["c_end"]])
+    compute_time = time.time() - t0
+
+    t0 = time.time()
+    out_fp = np.memmap(out_local, dtype=np.float64,
+                       mode='w+', shape=c_tile.shape)
+    out_fp[:] = c_tile[:]
+    out_fp.flush()
+    upload_file(config["upload_url"], out_local)
+    io_time += (time.time() - t0)
 
     print(json.dumps({
-        "tile_row":    tile_row,
-        "tile_col":    tile_col,
-        "result_tile": result_tile,
+        "tile_row": tr, "tile_col": tc, "url": config["upload_url"],
+        "rows": c_tile.shape[0], "cols": c_tile.shape[1],
+        "io_time": io_time, "compute_time": compute_time
     }))
+
 
 if __name__ == "__main__":
     main()
-

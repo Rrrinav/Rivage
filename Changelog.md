@@ -1,5 +1,34 @@
 # Change-log to track progress for report making
 
+## 7th commit
+
+> Decoupled Storage Architecture: Storage/Compute Separation, I/O Pipelining, and Cloud-Native Output Aggregation.
+
+**Architectural Shift:**
+Transitioned the system from a "Heavy Coordinator" model (where all data flowed through the central node via gRPC) to a "Decoupled Data Plane" model. This shift eliminates the gRPC Head-of-Line blocking bottleneck and allows the cluster to process datasets that significantly exceed the physical RAM capacity of any single node.
+
+**Changes:**
+1. **Dedicated Data Store Node (cmd/datastore):**
+    - Engineered a high-performance, standalone HTTP service that acts as a centralized object store (mimicking AWS S3 or HDFS).
+    - The service handles atomic binary uploads (PUT) and downloads (GET) directly to/from a local project directory (./rivage_data).
+    - Benefit: The Coordinator is no longer a bottleneck for large binary transfers, reducing its memory footprint to nearly zero during massive jobs.
+2. **URL-Based Task Dispatching & Control Plane Separation:**
+    - Modified the matmul pipeline to utilize "Data Pointers" (URLs) instead of raw byte payloads.
+    - The Coordinator now dispatches tiny JSON messages containing URLs for Matrix tiles. This ensures that the gRPC control stream remains ultra-responsive, even while gigabytes of data are moving across the network.
+3. **Asynchronous I/O Profiling & Instrumentation:**
+    - Injected granular instrumentation into the Python compute workers (tile_multiply.py and assemble.py) using high-resolution timers.
+    - Metric Isolation: Successfully isolated io_time (network fetch + disk write) from compute_time (NumPy arithmetic).
+    - Workers now return these metrics as part of their metadata, allowing for cluster-wide performance analysis.
+4. **Local Mmap Hybrid (Zero-Copy Persistence):**
+    - Optimized workers to stream HTTP data directly to the local disk (./rivage_worker_data) and subsequently treat those files as virtual memory via numpy.memmap.
+    - This allows the system to compute 10,000x10,000+ matrices (which require ~1GB+ per band) on machines with limited physical RAM, relying on the Linux kernel's page-swapping mechanisms for high-efficiency I/O.
+5. **Cloud-Native Output Aggregation:**
+    - Redesigned the job completion logic. The final matrix result is no longer downloaded and merged into the Coordinator's RAM.
+    - The system now returns a "Cloud-Native Summary"—a JSON object containing aggregate cluster metrics and URLs to the final binary result bands stored on the Data Store.
+6. **Advanced Build Orchestration (build.py):**
+    - Upgraded the Python build tool to manage three distinct binary classes: Coordinator, Worker, and DataStore.
+    - Implemented automated environment cleanup to ensure local data directories are purged upon cluster shutdown.
+
 ## 6th commit
 
 > Complete V2 Architectural Refactor: Enterprise-grade DAG pipelines, Pluggable Schedulers, Security, and Distributed Matrix Multiplication.

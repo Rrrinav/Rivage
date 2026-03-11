@@ -27,14 +27,19 @@ from pathlib import Path
 # ANSI colours (disabled on Windows)
 USE_COLOR = sys.platform != "win32"
 
+
 def _c(code: str, text: str) -> str:
     return f"\033[{code}m{text}\033[0m" if USE_COLOR else text
 
-def info(msg: str)    -> None: print(_c("1;34", f">>> {msg}"))
-def ok(msg: str)      -> None: print(_c("1;32", f"    ✓ {msg}"))
-def warn(msg: str)    -> None: print(_c("1;33", f"    ! {msg}"))
-def fatal(msg: str)   -> None: print(_c("1;31", f"    ✗ {msg}"), file=sys.stderr); sys.exit(1)
-def step(msg: str)    -> None: print(_c("0;36", f"  → {msg}"))
+
+def info(msg: str) -> None: print(_c("1;34", f">>> {msg}"))
+def ok(msg: str) -> None: print(_c("1;32", f"    ✓ {msg}"))
+def warn(msg: str) -> None: print(_c("1;33", f"    ! {msg}"))
+def fatal(msg: str) -> None: print(_c("1;31",
+                                      f"    ✗ {msg}"), file=sys.stderr); sys.exit(1)
+
+
+def step(msg: str) -> None: print(_c("0;36", f"  → {msg}"))
 
 
 def run(cmd: list[str], env: dict | None = None, check: bool = True) -> subprocess.CompletedProcess:
@@ -43,7 +48,8 @@ def run(cmd: list[str], env: dict | None = None, check: bool = True) -> subproce
     step(" ".join(cmd))
     result = subprocess.run(cmd, env=merged_env)
     if check and result.returncode != 0:
-        fatal(f"Command failed with exit code {result.returncode}: {' '.join(cmd)}")
+        fatal(f"Command failed with exit code {
+              result.returncode}: {' '.join(cmd)}")
     return result
 
 
@@ -104,7 +110,8 @@ def cmd_proto() -> None:
 
     # 1. Check protoc
     require("protoc")
-    step(f"protoc version: {subprocess.check_output(['protoc', '--version'], text=True).strip()}")
+    step(f"protoc version: {subprocess.check_output(
+        ['protoc', '--version'], text=True).strip()}")
 
     # 2. Ensure Go protoc plugins are installed
     env = patched_env()
@@ -157,14 +164,21 @@ def cmd_build() -> None:
     bin_dir = ROOT / "bin"
     bin_dir.mkdir(exist_ok=True)
 
-    coordinator_out = bin_dir / ("coordinator.exe" if sys.platform == "win32" else "coordinator")
-    worker_out      = bin_dir / ("worker.exe"      if sys.platform == "win32" else "worker")
+    coordinator_out = bin_dir / \
+        ("coordinator.exe" if sys.platform == "win32" else "coordinator")
+    worker_out = bin_dir / \
+        ("worker.exe" if sys.platform == "win32" else "worker")
+    datastore_out = bin_dir / \
+        ("datastore.exe" if sys.platform == "win32" else "datastore")
 
     run(["go", "build", "-o", str(coordinator_out), "./cmd/coordinator/"])
     ok(f"coordinator → {coordinator_out}")
 
     run(["go", "build", "-o", str(worker_out), "./cmd/worker/"])
     ok(f"worker      → {worker_out}")
+
+    run(["go", "build", "-o", str(datastore_out), "./cmd/datastore/"])
+    ok(f"datastore   → {datastore_out}")
 
     ok("Build complete")
 
@@ -179,18 +193,23 @@ def cmd_test() -> None:
 
 def cmd_run(num_workers: int = 2) -> None:
     """Start coordinator + N workers, Ctrl+C to stop all."""
-    info(f"Starting coordinator + {num_workers} worker(s)")
+    info(f"Starting Data Store, Coordinator + {num_workers} worker(s)")
     os.chdir(ROOT)
 
-    bin_dir       = ROOT / "bin"
-    coordinator   = bin_dir / ("coordinator.exe" if sys.platform == "win32" else "coordinator")
-    worker_bin    = bin_dir / ("worker.exe"      if sys.platform == "win32" else "worker")
-    coord_cfg     = ROOT / "configs" / "coordinator.yaml"
-    worker_cfg    = ROOT / "configs" / "worker.yaml"
+    bin_dir = ROOT / "bin"
+    coordinator = bin_dir / \
+        ("coordinator.exe" if sys.platform == "win32" else "coordinator")
+    worker_bin = bin_dir / \
+        ("worker.exe" if sys.platform == "win32" else "worker")
+    datastore_bin = bin_dir / \
+        ("datastore.exe" if sys.platform == "win32" else "datastore")
+    coord_cfg = ROOT / "configs" / "coordinator.yaml"
+    worker_cfg = ROOT / "configs" / "worker.yaml"
 
-    for f in [coordinator, worker_bin, coord_cfg, worker_cfg]:
+    for f in [coordinator, worker_bin, datastore_bin, coord_cfg, worker_cfg]:
         if not f.exists():
-            fatal(f"Required file not found: {f}\nRun 'python build.py' first.")
+            fatal(f"Required file not found: {
+                  f}\nRun 'python build.py' first.")
 
     processes: list[subprocess.Popen] = []
 
@@ -207,15 +226,29 @@ def cmd_run(num_workers: int = 2) -> None:
                 p.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 p.kill()
-        ok("All processes stopped")
+
+        # Clean up data directories on exit
+        # if os.path.exists("./rivage_data"):
+        #     shutil.rmtree("./rivage_data")
+        # if os.path.exists("./rivage_worker_data"):
+        #     shutil.rmtree("./rivage_worker_data")
+
+        ok("All processes stopped and data directories cleaned")
         sys.exit(0)
 
     signal.signal(signal.SIGINT,  cleanup)
     signal.signal(signal.SIGTERM, cleanup)
 
+    # Start Data Store
+    step("Starting datastore...")
+    ds_proc = subprocess.Popen([str(datastore_bin)])
+    processes.append(ds_proc)
+    time.sleep(0.5)
+
     # Start coordinator
     step("Starting coordinator...")
-    coord_proc = subprocess.Popen([str(coordinator), "-config", str(coord_cfg)])
+    coord_proc = subprocess.Popen(
+        [str(coordinator), "-config", str(coord_cfg)])
     processes.append(coord_proc)
     time.sleep(1)  # give the coordinator a moment to bind the port
 
@@ -227,8 +260,9 @@ def cmd_run(num_workers: int = 2) -> None:
         time.sleep(0.2)
 
     print()
+    ok(f"Data Store PID  : {ds_proc.pid}")
     ok(f"Coordinator PID : {coord_proc.pid}")
-    ok(f"Worker PIDs     : {[p.pid for p in processes[1:]]}")
+    ok(f"Worker PIDs     : {[p.pid for p in processes[2:]]}")
     print()
     print(_c("1;37", "  Status API : http://localhost:8080/status"))
     print(_c("1;37", "  Metrics    : http://localhost:8080/metrics"))

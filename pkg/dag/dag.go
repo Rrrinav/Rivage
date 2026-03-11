@@ -4,7 +4,7 @@
 // in Go using this builder API.  Quantitative settings (timeouts, retries,
 // parallelism) come from YAML config; logical wiring is expressed here.
 //
-// Example — a two-stage word-count pipeline:
+// Example: a two-stage word-count pipeline:
 //
 //	pipeline := dag.New("word-count").
 //	    Stage("map",
@@ -24,10 +24,7 @@ import (
 	"sort"
 )
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Executor — how a stage's tasks are run
-// ─────────────────────────────────────────────────────────────────────────────
-
 // Executor describes how a task should be executed on a worker node.
 type Executor struct {
 	// Command is the binary to run (e.g. "python3", "node", "/usr/bin/myapp").
@@ -64,10 +61,7 @@ func GoExecutor(binaryPath string, args ...string) Executor {
 	return Executor{Command: binaryPath, Args: args}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // ShuffleFunc — how one stage's outputs become the next stage's inputs
-// ─────────────────────────────────────────────────────────────────────────────
-
 // ShuffleResult is returned by a ShuffleFunc.
 // Keys are the task-IDs for the next stage; values are their input payloads.
 type ShuffleResult map[string][]byte
@@ -86,9 +80,7 @@ type TaskOutput struct {
 	Data    []byte
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Built-in shuffle strategies
-// ─────────────────────────────────────────────────────────────────────────────
 
 // JSONKeyGroupShuffle is the classic MapReduce shuffle:
 // each map output is a JSON object {"key": ..., "value": ...}.
@@ -120,33 +112,27 @@ func BroadcastShuffle(downstreamTaskIDs []string) ShuffleFunc {
 	}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Stage definition
-// ─────────────────────────────────────────────────────────────────────────────
-
 // Stage is one node in the execution DAG.
 type Stage struct {
 	ID          string
 	Executor    Executor
-	Parallelism int           // max concurrent tasks; 0 = unlimited
-	Shuffle     ShuffleFunc   // nil = this stage is a source (inputs provided externally)
-	MaxRetries  int           // -1 = use global default
-	TimeoutSecs int64         // 0 = use global default
+	Parallelism int         // max concurrent tasks; 0 = unlimited
+	Shuffle     ShuffleFunc // nil = this stage is a source (inputs provided externally)
+	MaxRetries  int         // -1 = use global default
+	TimeoutSecs int64       // 0 = use global default
 	// DependsOn lists stage IDs whose outputs feed into this stage's shuffle.
 	// For a linear pipeline this is auto-populated by the builder.
 	DependsOn []string
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Pipeline
-// ─────────────────────────────────────────────────────────────────────────────
-
 // Pipeline is a validated, immutable DAG of stages.
 type Pipeline struct {
 	Name   string
 	Stages map[string]*Stage
 	// Order is a topologically sorted list of stage IDs.
-	Order  []string
+	Order []string
 }
 
 // StageByID returns the stage with the given ID or nil.
@@ -154,10 +140,7 @@ func (p *Pipeline) StageByID(id string) *Stage {
 	return p.Stages[id]
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Builder
-// ─────────────────────────────────────────────────────────────────────────────
-
 // Builder constructs a Pipeline using a fluent API.
 type Builder struct {
 	name   string
@@ -275,10 +258,7 @@ func (b *Builder) Build() (*Pipeline, error) {
 	return p, nil
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 // Topological sort (Kahn's algorithm)
-// ─────────────────────────────────────────────────────────────────────────────
-
 func topoSort(stages []*Stage) ([]string, error) {
 	inDegree := make(map[string]int, len(stages))
 	adj := make(map[string][]string, len(stages))
@@ -322,4 +302,3 @@ func topoSort(stages []*Stage) ([]string, error) {
 	}
 	return order, nil
 }
-
