@@ -1,9 +1,9 @@
 syntax = "proto3";
 
 package rivage;
-
 option go_package = "rivage/proto";
 
+// Define the phases of our MapReduce pipeline
 enum TaskType {
   TASK_TYPE_UNKNOWN = 0;
   TASK_TYPE_MAP     = 1;
@@ -24,90 +24,95 @@ enum WorkerState {
   WORKER_STATE_DRAINING = 2;
 }
 
+// -----------------------------------------------------
+// Message FROM: Executor (Worker)
+// Message TO:   Coordinator (Master)
+// -----------------------------------------------------
+
 message WorkerCapabilities {
-  string          worker_id    = 1;
-  int32           cpu_cores    = 2;
-  int64           memory_bytes = 3;
-  string          hostname     = 4;
-  string          version      = 5;
-  repeated string tags         = 6;
-  string          worker_token = 7;
+  string worker_id = 1;
+  int32 cpu_cores = 2;
+  int64 memory_bytes = 3;
+  string hostname = 4;
+  string version = 5;
+  repeated string tags = 6;
+  string worker_token = 7;
 }
 
 message Heartbeat {
-  string      worker_id      = 1;
-  WorkerState state          = 2;
-  int32       active_tasks   = 3;
-  float       cpu_usage      = 4;
-  int64       memory_used    = 5;
-  int64       timestamp_unix = 6;
+  string worker_id = 1;
+  WorkerState state = 2;
+  int32 active_tasks = 3;
+  float cpu_usage = 4;
+  int64 memory_used = 5;
+  int64 timestamp_unix = 6;
 }
 
 message DrainRequest {
   string worker_id = 1;
-  string reason    = 2;
+  string reason = 2;
 }
 
-// ChunkedTaskResult: worker→coordinator streaming for large outputs.
 message ChunkedTaskResult {
-  string task_id     = 1;
-  string job_id      = 2;
-  string stage_id    = 3;
-  string worker_id   = 4;
-  int32  chunk_index = 5;
-  bytes  data        = 6;
-  bool   is_final    = 7;
+  string task_id = 1;
+  string job_id = 2;
+  string stage_id = 3;
+  string worker_id = 4;
+  int32 chunk_index = 5;
+  bytes data = 6;
+  bool is_final = 7;
 }
 
 message WorkerMessage {
   oneof payload {
-    WorkerCapabilities register       = 1;
-    TaskResult         result         = 2;
-    Heartbeat          heartbeat      = 3;
-    DrainRequest       drain          = 4;
-    ChunkedTaskResult  chunked_result = 5;
+    WorkerCapabilities register = 1;
+    TaskResult result = 2;
+    Heartbeat heartbeat = 3;
+    DrainRequest drain = 4;
+    ChunkedTaskResult chunked_result = 5;
   }
 }
 
-// ── Coordinator → Worker messages ────────────────────────────────────────────
+// -----------------------------------------------------
+// Message FROM: Coordinator (Master)
+// Message TO:   Executor (Worker)
+// -----------------------------------------------------
 
 message TaskSpec {
-  string             task_id         = 1;
-  string             job_id          = 2;
-  string             stage_id        = 3;
-  TaskType           task_type       = 4;
-  string             command         = 5;
-  repeated string    args            = 6;
-  bytes              input_data      = 7;
-  bytes              code            = 8;
-  map<string,string> env             = 9;
-  int64              timeout_seconds = 10;
-  int32              max_retries     = 11;
-  int32              retry_count     = 12;
-  repeated string    required_tags   = 13;
+  string          task_id       = 1;
+  string          job_id        = 2;
+  string          stage_id      = 3;
+  TaskType        task_type     = 4;
+  string          command       = 5;
+  repeated string args          = 6;
+  bytes           input_data    = 7;
+  bytes           code          = 8;
+  map<string, string> env       = 9;
+  int64           timeout_seconds = 10;
+  int32           max_retries   = 11;
+  int32           retry_count   = 12;
+  repeated string required_tags = 13;
+  repeated string affinity_keys = 14; // NEW: Data Locality tags
 }
 
-// ChunkedTaskSpec: coordinator→worker streaming for large input_data.
-// chunk_index=0 carries all metadata + first data slice.
-// Subsequent chunks carry only task_id + chunk_index + data.
-// When is_final=true the worker assembles and begins execution.
 message ChunkedTaskSpec {
-  string             task_id         = 1;
-  string             job_id          = 2;
-  string             stage_id        = 3;
-  TaskType           task_type       = 4;
-  string             command         = 5;
-  repeated string    args            = 6;
-  bytes              code            = 7;
-  map<string,string> env             = 8;
-  int64              timeout_seconds = 9;
-  int32              max_retries     = 10;
-  int32              retry_count     = 11;
-  repeated string    required_tags   = 12;
-  int32              chunk_index     = 13;
-  bytes              data            = 14;
-  bool               is_final        = 15;
-  int64              total_size      = 16; // on first chunk, for pre-allocation
+  string          task_id       = 1;
+  string          job_id        = 2;
+  string          stage_id      = 3;
+  TaskType        task_type     = 4;
+  string          command       = 5;
+  repeated string args          = 6;
+  bytes           code          = 7;
+  map<string, string> env       = 8;
+  int64           timeout_seconds = 9;
+  int32           max_retries   = 10;
+  int32           retry_count   = 11;
+  repeated string required_tags = 12;
+  int32           chunk_index   = 13;
+  bytes           data          = 14;
+  bool            is_final      = 15;
+  int64           total_size    = 16;
+  repeated string affinity_keys = 17; // NEW: Data Locality tags
 }
 
 message TaskResult {
@@ -122,8 +127,8 @@ message TaskResult {
 }
 
 message AckRegistration {
-  bool   accepted   = 1;
-  string message    = 2;
+  bool accepted = 1;
+  string message = 2;
   string auth_token = 3;
 }
 
@@ -133,19 +138,22 @@ message DrainCommand {
 
 message CancelTask {
   string task_id = 1;
-  string reason  = 2;
+  string reason = 2;
 }
 
 message CoordinatorMessage {
   oneof payload {
-    TaskSpec        task         = 1;
-    AckRegistration ack          = 2;
-    DrainCommand    drain        = 3;
-    CancelTask      cancel       = 4;
+    TaskSpec task = 1;
+    AckRegistration ack = 2;
+    DrainCommand drain = 3;
+    CancelTask cancel = 4;
     ChunkedTaskSpec chunked_task = 5;
   }
 }
 
+// -----------------------------------------------------
+// RPC Service
+// -----------------------------------------------------
 service WorkerService {
   rpc Connect(stream WorkerMessage) returns (stream CoordinatorMessage);
 }

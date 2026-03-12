@@ -65,8 +65,8 @@ func (c *Coordinator) Start(ctx context.Context) error {
 	grpcOpts = append(grpcOpts,
 		grpc.MaxRecvMsgSize(maxMsgSize),
 		grpc.MaxSendMsgSize(maxMsgSize),
-		grpc.WriteBufferSize(1024*1024*8), // NEW: 8MB TCP Write Buffer for max throughput
-		grpc.ReadBufferSize(1024*1024*8),  // NEW: 8MB TCP Read Buffer for max throughput
+		grpc.WriteBufferSize(1024*1024*8),
+		grpc.ReadBufferSize(1024*1024*8),
 	)
 
 	if c.cfg.Security.Enabled && c.cfg.Security.TLSCertFile != "" {
@@ -123,7 +123,7 @@ func (c *Coordinator) Start(ctx context.Context) error {
 }
 
 // RunJob executes a pipeline and merges outputs to JSON.
-func (c *Coordinator) RunJob(ctx context.Context, jobID string, pipeline *dag.Pipeline, inputChunks [][]byte) ([]byte, error) {
+func (c *Coordinator) RunJob(ctx context.Context, jobID string, pipeline *dag.Pipeline, inputChunks []dag.TaskInput) ([]byte, error) {
 	outputs, err := c.RunJobRaw(ctx, jobID, pipeline, inputChunks)
 	if err != nil {
 		return nil, err
@@ -132,7 +132,7 @@ func (c *Coordinator) RunJob(ctx context.Context, jobID string, pipeline *dag.Pi
 }
 
 // RunJobRaw executes a pipeline and returns the raw binary TaskOutputs (bypasses JSON merge).
-func (c *Coordinator) RunJobRaw(ctx context.Context, jobID string, pipeline *dag.Pipeline, inputChunks [][]byte) ([]dag.TaskOutput, error) {
+func (c *Coordinator) RunJobRaw(ctx context.Context, jobID string, pipeline *dag.Pipeline, inputChunks []dag.TaskInput) ([]dag.TaskOutput, error) {
 	c.log.Info("Starting job", "job_id", jobID, "pipeline", pipeline.Name, "chunks", len(inputChunks))
 
 	codeCache := map[string][]byte{}
@@ -193,7 +193,7 @@ func (c *Coordinator) executeStage(ctx context.Context, jobID string, stage *dag
 	}
 	defer rs.Close()
 
-	j := newJob(jobID+"/"+stage.ID, tasks, rs)
+	j := newJob(jobID+"/"+stage.ID, tasks, rs, c)
 	c.jobs.Store(j.id, j)
 	defer c.jobs.Delete(j.id)
 
@@ -229,6 +229,7 @@ func (c *Coordinator) executeStage(ctx context.Context, jobID string, stage *dag
 }
 
 type taskStatus int32
+
 const (
 	statusPending taskStatus = iota
 	statusRunning
@@ -247,6 +248,7 @@ type taskState struct {
 
 type job struct {
 	id         string
+	coord      *Coordinator
 	mu         sync.Mutex
 	tasks      map[string]*taskState
 	totalTasks int
@@ -264,13 +266,14 @@ type chunkAssembler struct {
 	lastIdx int32
 }
 
-func newJob(id string, specs []*pb.TaskSpec, rs *store.ResultStore) *job {
+func newJob(id string, specs []*pb.TaskSpec, rs *store.ResultStore, coord *Coordinator) *job {
 	tasks := make(map[string]*taskState, len(specs))
 	for _, s := range specs {
 		tasks[s.TaskId] = &taskState{spec: s, status: statusPending}
 	}
 	return &job{
 		id:              id,
+		coord:           coord,
 		tasks:           tasks,
 		totalTasks:      len(specs),
 		allDone:         make(chan struct{}),
@@ -305,6 +308,19 @@ func (j *job) recordResult(result *pb.TaskResult, maxRetries int32) (retry bool)
 	if result.Status == pb.TaskStatus_TASK_STATUS_COMPLETED {
 		state.status = statusCompleted
 		telemetry.Global.TasksCompleted.Inc()
+
+		// NEW: Data Locality Cache Update!
+		// When a task succeeds, we record its affinity keys onto the worker's state
+		// so the scheduler knows this worker is "warm" for these files.
+		if len(state.spec.AffinityKeys) > 0 {
+			if wsRaw, exists := j.coord.workers.Load(state.workerID); exists {
+				ws := wsRaw.(*workerState)
+				for _, k := range state.spec.AffinityKeys {
+					ws.cachedKeys.Store(k, true)
+				}
+			}
+		}
+
 	} else {
 		state.status = statusFailed
 		telemetry.Global.TasksFailed.Inc()
@@ -363,7 +379,7 @@ func (j *job) snapshotPending() []*taskState {
 	return out
 }
 
-func (c *Coordinator) buildSourceTasks(jobID string, stage *dag.Stage, chunks [][]byte, codeCache map[string][]byte) []*pb.TaskSpec {
+func (c *Coordinator) buildSourceTasks(jobID string, stage *dag.Stage, chunks []dag.TaskInput, codeCache map[string][]byte) []*pb.TaskSpec {
 	maxRetries := int32(c.cfg.Scheduler.MaxGlobalRetries)
 	if stage.MaxRetries >= 0 {
 		maxRetries = int32(stage.MaxRetries)
@@ -388,7 +404,7 @@ func (c *Coordinator) buildShuffledTasks(jobID string, stage *dag.Stage, shuffle
 	return tasks
 }
 
-func (c *Coordinator) makeTaskSpec(jobID string, stage *dag.Stage, taskID string, inputData []byte, codeCache map[string][]byte, maxRetries int32) *pb.TaskSpec {
+func (c *Coordinator) makeTaskSpec(jobID string, stage *dag.Stage, taskID string, input dag.TaskInput, codeCache map[string][]byte, maxRetries int32) *pb.TaskSpec {
 	exec := stage.Executor
 	timeout := c.cfg.Scheduler.TaskTimeout.Seconds()
 	if stage.TimeoutSecs > 0 {
@@ -404,7 +420,8 @@ func (c *Coordinator) makeTaskSpec(jobID string, stage *dag.Stage, taskID string
 		StageId:        stage.ID,
 		Command:        exec.Command,
 		Args:           exec.Args,
-		InputData:      inputData,
+		InputData:      input.Data,
+		AffinityKeys:   input.AffinityKeys, // Attaches the affinity keys to the task
 		Env:            env,
 		TimeoutSeconds: int64(timeout),
 		MaxRetries:     maxRetries,
@@ -452,13 +469,12 @@ func (c *Coordinator) watchJob(ctx context.Context, j *job) {
 		case <-ticker.C:
 			pending := j.snapshotPending()
 			for _, state := range pending {
-				workerID, err := c.pickWorker(state.spec.RequiredTags)
+				workerID, err := c.pickWorker(state.spec.RequiredTags, state.spec.AffinityKeys)
 				if err != nil {
 					c.log.Warn("No worker available", "task", state.spec.TaskId, "err", err)
 					break
 				}
-				
-				// 1. Optimistically mark as running to prevent double-dispatch
+
 				j.mu.Lock()
 				state.status = statusRunning
 				state.workerID = workerID
@@ -468,13 +484,9 @@ func (c *Coordinator) watchJob(ctx context.Context, j *job) {
 				j.mu.Unlock()
 				c.log.Debug("Dispatched task", "task", state.spec.TaskId, "worker", workerID)
 
-				// 2. NEW: Asynchronous Parallel Dispatching
-				// Smashes network bottlenecks by streaming to multiple workers simultaneously
 				go func(wID string, tState *taskState) {
 					if err := c.dispatch(wID, tState.spec); err != nil {
 						c.log.Error("Dispatch failed", "worker", wID, "task", tState.spec.TaskId, "err", err)
-						
-						// Revert on failure
 						j.mu.Lock()
 						tState.status = statusPending
 						tState.workerID = ""
@@ -516,7 +528,7 @@ func (c *Coordinator) reapDeadWorkerTasks(j *job) {
 	}
 }
 
-func (c *Coordinator) pickWorker(requiredTags []string) (string, error) {
+func (c *Coordinator) pickWorker(requiredTags []string, affinityKeys []string) (string, error) {
 	timeout := c.cfg.Scheduler.HeartbeatTimeout.Duration
 	var snapshots []scheduler.WorkerSnapshot
 	c.workers.Range(func(_, v interface{}) bool {
@@ -532,7 +544,7 @@ func (c *Coordinator) pickWorker(requiredTags []string) (string, error) {
 	if len(snapshots) == 0 {
 		return "", fmt.Errorf("no workers available")
 	}
-	return c.sched.Pick(snapshots, requiredTags)
+	return c.sched.Pick(snapshots, requiredTags, affinityKeys)
 }
 
 const dispatchChunkSize = 4 * 1024 * 1024
@@ -587,6 +599,7 @@ func (c *Coordinator) dispatch(workerID string, spec *pb.TaskSpec) error {
 			msg.MaxRetries = spec.MaxRetries
 			msg.RetryCount = spec.RetryCount
 			msg.RequiredTags = spec.RequiredTags
+			msg.AffinityKeys = spec.AffinityKeys // Pass down the affinity on chunk stream
 			msg.TotalSize = totalSize
 		} else {
 			msg.TaskId = spec.TaskId
@@ -597,7 +610,7 @@ func (c *Coordinator) dispatch(workerID string, spec *pb.TaskSpec) error {
 			Payload: &pb.CoordinatorMessage_ChunkedTask{ChunkedTask: msg},
 		})
 		ws.sendMu.Unlock()
-		
+
 		if err != nil {
 			return fmt.Errorf("sending chunk %d for task %q: %w", chunkIdx, spec.TaskId, err)
 		}
@@ -609,7 +622,7 @@ func (c *Coordinator) dispatch(workerID string, spec *pb.TaskSpec) error {
 
 type workerState struct {
 	mu            sync.RWMutex
-	sendMu        sync.Mutex // NEW: Serializes gRPC stream.Send to prevent concurrent write panics
+	sendMu        sync.Mutex
 	id            string
 	caps          *pb.WorkerCapabilities
 	stream        pb.WorkerService_ConnectServer
@@ -617,18 +630,27 @@ type workerState struct {
 	activeTasks   atomic.Int32
 	cpuUsage      atomic.Value
 	draining      bool
+	cachedKeys    sync.Map // NEW: Tracks which files this worker has already processed
 }
 
 func (ws *workerState) snapshot() scheduler.WorkerSnapshot {
 	ws.mu.RLock()
 	defer ws.mu.RUnlock()
 	cpu, _ := ws.cpuUsage.Load().(float32)
+
+	var keys []string
+	ws.cachedKeys.Range(func(k, _ interface{}) bool {
+		keys = append(keys, k.(string))
+		return true
+	})
+
 	return scheduler.WorkerSnapshot{
 		ID:            ws.id,
 		Tags:          ws.caps.Tags,
 		ActiveTasks:   int(ws.activeTasks.Load()),
 		CPUUsage:      cpu,
 		LastHeartbeat: ws.lastHeartbeat,
+		CachedKeys:    keys,
 	}
 }
 

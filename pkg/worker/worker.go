@@ -310,6 +310,7 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 	cmd.Stdout = outFile
 	cmd.Stderr = stderrBuf
 	cmd.Env = os.Environ()
+	cmd.Env = append(cmd.Env, fmt.Sprintf("RIVAGE_WORKER_ID=%s", w.id))
 	for k, v := range spec.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}

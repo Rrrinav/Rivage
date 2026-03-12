@@ -13,7 +13,6 @@ import (
 	"rivage/pkg/worker"
 )
 
-// TestWordCountEndToEnd runs a complete word-count MapReduce in-process.
 func TestWordCountEndToEnd(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -70,7 +69,6 @@ func TestWordCountEndToEnd(t *testing.T) {
 		go w.Run(ctx)
 	}
 
-	// Give workers time to connect and register
 	time.Sleep(800 * time.Millisecond)
 
 	pipeline, err := dag.New("test-word-count").
@@ -91,9 +89,12 @@ func TestWordCountEndToEnd(t *testing.T) {
 		"the fox ran away",
 		"a quick brown dog",
 	}
-	chunks := make([][]byte, len(lines))
+	
+	// FIX: Use dag.TaskInput for chunks
+	chunks := make([]dag.TaskInput, len(lines))
 	for i, l := range lines {
-		chunks[i], _ = json.Marshal(map[string]interface{}{"chunk": []string{l}})
+		data, _ := json.Marshal(map[string]interface{}{"chunk": []string{l}})
+		chunks[i] = dag.TaskInput{Data: data}
 	}
 
 	result, err := coord.RunJob(ctx, "test-job-1", pipeline, chunks)
@@ -124,7 +125,6 @@ func TestWordCountEndToEnd(t *testing.T) {
 	}
 }
 
-// TestPipelineBuildErrors checks the DAG builder rejects invalid configs.
 func TestPipelineBuildErrors(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -177,7 +177,6 @@ func TestPipelineBuildErrors(t *testing.T) {
 	}
 }
 
-// TestSchedulerAlgorithms checks all three scheduler algorithms compile and pick.
 func TestSchedulerAlgorithms(t *testing.T) {
 	for _, algo := range []string{"round_robin", "least_loaded", "tag_affinity"} {
 		t.Run(algo, func(t *testing.T) {
@@ -194,7 +193,6 @@ func TestSchedulerAlgorithms(t *testing.T) {
 	}
 }
 
-// Inline Python scripts
 const mapScript = `
 import json, sys, re
 data = json.load(sys.stdin)

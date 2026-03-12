@@ -24,6 +24,13 @@ import (
 	"sort"
 )
 
+// TaskInput represents the data and locality preferences for a single task.
+// NEW: This is required for Data-Aware Scheduling (Data Locality).
+type TaskInput struct {
+	Data         []byte
+	AffinityKeys []string
+}
+
 // Executor — how a stage's tasks are run
 // Executor describes how a task should be executed on a worker node.
 type Executor struct {
@@ -64,7 +71,7 @@ func GoExecutor(binaryPath string, args ...string) Executor {
 // ShuffleFunc — how one stage's outputs become the next stage's inputs
 // ShuffleResult is returned by a ShuffleFunc.
 // Keys are the task-IDs for the next stage; values are their input payloads.
-type ShuffleResult map[string][]byte
+type ShuffleResult map[string]TaskInput
 
 // ShuffleFunc transforms a slice of completed task outputs from stage N
 // into a map of taskID → inputPayload for stage N+1.
@@ -106,7 +113,7 @@ func BroadcastShuffle(downstreamTaskIDs []string) ShuffleFunc {
 		combined := combineOutputsJSON(outputs)
 		result := make(ShuffleResult, len(downstreamTaskIDs))
 		for _, id := range downstreamTaskIDs {
-			result[id] = combined
+			result[id] = TaskInput{Data: combined}
 		}
 		return result, nil
 	}

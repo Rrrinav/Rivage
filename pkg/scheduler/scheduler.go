@@ -7,7 +7,6 @@ import (
 	"time"
 )
 
-// WorkerSnapshot — the scheduler's view of a worker
 // WorkerSnapshot is a point-in-time view of a worker, safe to read without locks.
 type WorkerSnapshot struct {
 	ID            string
@@ -15,15 +14,28 @@ type WorkerSnapshot struct {
 	ActiveTasks   int
 	CPUUsage      float32
 	LastHeartbeat time.Time
+	CachedKeys    []string // NEW: Data Locality awareness
 }
 
-// Scheduler interface
 // Scheduler picks the best worker for a given task.
 type Scheduler interface {
-	// Pick selects a worker from the provided snapshot list.
-	// requiredTags: the worker must have ALL of these tags.
-	// Returns the chosen worker ID, or an error if no suitable worker is found.
-	Pick(workers []WorkerSnapshot, requiredTags []string) (string, error)
+	Pick(workers []WorkerSnapshot, requiredTags []string, affinityKeys []string) (string, error)
+}
+
+func affinityScore(cached, requested []string) int {
+	if len(requested) == 0 || len(cached) == 0 {
+		return 0
+	}
+	score := 0
+	for _, r := range requested {
+		for _, c := range cached {
+			if r == c {
+				score++
+				break
+			}
+		}
+	}
+	return score
 }
 
 // Round-robin
@@ -34,7 +46,7 @@ type roundRobin struct {
 
 func NewRoundRobin() Scheduler { return &roundRobin{} }
 
-func (r *roundRobin) Pick(workers []WorkerSnapshot, required []string) (string, error) {
+func (r *roundRobin) Pick(workers []WorkerSnapshot, required []string, affinityKeys []string) (string, error) {
 	eligible := filterByTags(workers, required)
 	if len(eligible) == 0 {
 		return "", fmt.Errorf("no eligible workers (required tags: %v)", required)
@@ -47,44 +59,64 @@ func (r *roundRobin) Pick(workers []WorkerSnapshot, required []string) (string, 
 }
 
 // Least-loaded (fewest active tasks, then lowest CPU usage)
+// NEW: Upgraded to be Data-Locality aware!
 type leastLoaded struct{}
 
 func NewLeastLoaded() Scheduler { return &leastLoaded{} }
 
-func (l *leastLoaded) Pick(workers []WorkerSnapshot, required []string) (string, error) {
+func (l *leastLoaded) Pick(workers []WorkerSnapshot, required []string, affinityKeys []string) (string, error) {
 	eligible := filterByTags(workers, required)
 	if len(eligible) == 0 {
 		return "", fmt.Errorf("no eligible workers (required tags: %v)", required)
 	}
-	best := eligible[0]
-	for _, w := range eligible[1:] {
-		if w.ActiveTasks < best.ActiveTasks {
-			best = w
-		} else if w.ActiveTasks == best.ActiveTasks && w.CPUUsage < best.CPUUsage {
-			best = w
+
+	// Find the maximum affinity score among eligible workers
+	maxAffinity := -1
+	for _, w := range eligible {
+		score := affinityScore(w.CachedKeys, affinityKeys)
+		if score > maxAffinity {
+			maxAffinity = score
 		}
+	}
+
+	// Filter down to only the workers that have the max affinity score,
+	// then apply the least-loaded tie breaker.
+	var best WorkerSnapshot
+	first := true
+	for _, w := range eligible {
+		if affinityScore(w.CachedKeys, affinityKeys) == maxAffinity {
+			if first {
+				best = w
+				first = false
+			} else if w.ActiveTasks < best.ActiveTasks {
+				best = w
+			} else if w.ActiveTasks == best.ActiveTasks && w.CPUUsage < best.CPUUsage {
+				best = w
+			}
+		}
+	}
+
+	if first {
+		return "", fmt.Errorf("no eligible workers")
 	}
 	return best.ID, nil
 }
 
-// Tag-affinity (best tag overlap, then least loaded)
-
+// Tag-affinity
 type tagAffinity struct{}
 
 func NewTagAffinity() Scheduler { return &tagAffinity{} }
 
-func (t *tagAffinity) Pick(workers []WorkerSnapshot, required []string) (string, error) {
+func (t *tagAffinity) Pick(workers []WorkerSnapshot, required []string, affinityKeys []string) (string, error) {
 	eligible := filterByTags(workers, required)
 	if len(eligible) == 0 {
 		return "", fmt.Errorf("no eligible workers (required tags: %v)", required)
 	}
-	// Rank by number of matching required tags first, then by active tasks.
 	best := eligible[0]
 	bestScore := tagScore(best, required)
 	for _, w := range eligible[1:] {
 		score := tagScore(w, required)
-		if score > bestScore ||
-			(score == bestScore && w.ActiveTasks < best.ActiveTasks) {
+		if score > bestScore || (score == bestScore && w.ActiveTasks < best.ActiveTasks) {
 			best = w
 			bestScore = score
 		}
@@ -106,8 +138,6 @@ func tagScore(w WorkerSnapshot, required []string) int {
 	return score
 }
 
-// Factory
-// New creates a Scheduler by name.
 func New(algorithm string) (Scheduler, error) {
 	switch algorithm {
 	case "round_robin":
@@ -121,7 +151,6 @@ func New(algorithm string) (Scheduler, error) {
 	}
 }
 
-// Helpers
 func filterByTags(workers []WorkerSnapshot, required []string) []WorkerSnapshot {
 	if len(required) == 0 {
 		return workers
