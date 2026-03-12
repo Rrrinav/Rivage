@@ -1,5 +1,25 @@
 # Change-log to track progress for report making
 
+## 8th commit
+
+> Data Locality Scheduling and the "Thundering Herd" Resolution.
+
+**Changes:**
+
+1. **Affinity-Aware Scheduling (pkg/scheduler):**
+    - Upgraded the core DAG task structures to support AffinityKeys. Tasks can now declare which binary files they require (e.g., A.bin, B.bin).
+    - Re-engineered the Scheduler interface to track CachedKeys for each worker node. The scheduler actively routes tasks to workers that have already downloaded the required files, drastically reducing network redundancy.
+
+2. **Mitigating the "Thundering Herd" (examples/matmul):**
+    - Identified a critical disk-thrashing bottleneck where 16 concurrent tasks attempted to download the same 800MB matrix file at the exact same millisecond, spiking aggregate I/O times to 1.5 hours.
+    - Implemented atomic .download file wait-locks in the Python Python Data Node Fetcher (tile_multiply.py) and Assembly (assemble.py) scripts. If a sibling task is currently downloading a required file, the task gracefully yields (time.sleep()), allowing a single sequential download to occur.
+
+3. **Experimental Benchmark Triumph:**
+    - Successfully executed a 10,000 x 10,000 matrix multiplication across a simulated 4-worker cluster (16 cores).
+    - By eliminating disk thrashing and employing smart locality, network transfer time was minimized.
+
+`Result`: The cluster completed 11.1 minutes of sequential workload (Aggregate Compute + I/O) in just 39.46 seconds of wall-clock time, achieving a massive 17x parallel speedup.
+
 ## 7th commit
 
 > Decoupled Storage Architecture: Storage/Compute Separation, I/O Pipelining, and Cloud-Native Output Aggregation.
