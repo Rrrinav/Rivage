@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"rivage/examples/hashcrack"
 	"rivage/examples/matmul"
 	"rivage/pkg/config"
 	"rivage/pkg/coordinator"
@@ -16,6 +17,9 @@ import (
 
 func main() {
 	cfgPath := flag.String("config", "configs/coordinator.yaml", "path to coordinator config file")
+
+	// NEW: This is the flag that was missing!
+	exampleFlag := flag.String("example", "matmul", "Which example to run: matmul or hashcrack")
 	flag.Parse()
 
 	cfg, err := config.LoadCoordinatorConfig(*cfgPath)
@@ -35,23 +39,45 @@ func main() {
 		// Wait for workers to connect
 		time.Sleep(3 * time.Second)
 
-		log.Printf("[demo] Starting Distributed Matrix Multiplication...")
-		matrixSize := 10000
-		tileSize := 2000
+		// Dynamically switch between workloads based on the build.py flag
+		switch *exampleFlag {
+		case "matmul":
+			log.Printf("[demo] Starting Distributed Matrix Multiplication...")
+			matrixSize := 10000
+			tileSize := 2000
 
-		matA := matmul.RandomMatrix(matrixSize)
-		matB := matmul.RandomMatrix(matrixSize)
+			matA := matmul.RandomMatrix(matrixSize)
+			matB := matmul.RandomMatrix(matrixSize)
 
-		start := time.Now()
-		// Now correctly expects (string, error)
-		resultMeta, err := matmul.MatrixJob(ctx, coord, matA, matB, tileSize)
-		if err != nil {
-			log.Printf("[demo] Matrix job failed: %v", err)
-			return
+			start := time.Now()
+			resultMeta, err := matmul.MatrixJob(ctx, coord, matA, matB, tileSize)
+			if err != nil {
+				log.Printf("[demo] Matrix job failed: %v", err)
+				return
+			}
+
+			log.Printf("[demo] Matrix job completed in %v", time.Since(start))
+			log.Printf("[demo] Final Matrix Metadata:\n%s", resultMeta)
+
+		case "hashcrack":
+			log.Printf("[demo] Starting CPU-Bound Distributed Hash Cracking...")
+			// "rivage" is 6 letters. The search space is 26^6 = 308 million hashes.
+			// The cluster will divide this into 26 tasks of 11.8 million hashes each.
+			targetPassword := "rivage"
+
+			start := time.Now()
+			resultMeta, err := hashcrack.CrackJob(ctx, coord, targetPassword)
+			if err != nil {
+				log.Printf("[demo] HashCrack job failed: %v", err)
+				return
+			}
+
+			log.Printf("[demo] HashCrack job completed in %v", time.Since(start))
+			log.Printf("[demo] Final Result:\n%s", resultMeta)
+
+		default:
+			log.Printf("[demo] Unknown example specified: %s", *exampleFlag)
 		}
-
-		log.Printf("[demo] Matrix job completed in %v", time.Since(start))
-		log.Printf("[demo] Final Matrix Metadata:\n%s", resultMeta)
 	}()
 
 	if err := coord.Start(ctx); err != nil {

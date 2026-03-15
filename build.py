@@ -7,7 +7,8 @@ Usage:
     python build.py proto        # generate protobuf Go files only
     python build.py test         # tidy + build + run tests
     python build.py run          # tidy + build + run coordinator + 2 workers
-    python build.py run 3        # tidy + build + run coordinator + N workers
+    python build.py run 4 -e matmul     # run with Matrix Multiplication
+    python build.py run 4 -e hashcrack  # run with Hash Cracking
     python build.py clean        # remove bin/ directory
 """
 
@@ -191,9 +192,9 @@ def cmd_test() -> None:
     ok("All tests passed")
 
 
-def cmd_run(num_workers: int = 2) -> None:
+def cmd_run(num_workers: int = 2, example: str = "matmul") -> None:
     """Start coordinator + N workers, Ctrl+C to stop all."""
-    info(f"Starting Data Store, Coordinator + {num_workers} worker(s)")
+    info(f"Starting Data Store, Coordinator + {num_workers} worker(s) [Example: {example}]")
     os.chdir(ROOT)
 
     bin_dir = ROOT / "bin"
@@ -227,12 +228,6 @@ def cmd_run(num_workers: int = 2) -> None:
             except subprocess.TimeoutExpired:
                 p.kill()
 
-        # Clean up data directories on exit
-        # if os.path.exists("./rivage_data"):
-        #     shutil.rmtree("./rivage_data")
-        # if os.path.exists("./rivage_worker_data"):
-        #     shutil.rmtree("./rivage_worker_data")
-
         ok("All processes stopped and data directories cleaned")
         sys.exit(0)
 
@@ -245,10 +240,10 @@ def cmd_run(num_workers: int = 2) -> None:
     processes.append(ds_proc)
     time.sleep(0.5)
 
-    # Start coordinator
-    step("Starting coordinator...")
+    # Start coordinator, passing the chosen example
+    step(f"Starting coordinator with example '{example}'...")
     coord_proc = subprocess.Popen(
-        [str(coordinator), "-config", str(coord_cfg)])
+        [str(coordinator), "-config", str(coord_cfg), "-example", example])
     processes.append(coord_proc)
     time.sleep(1)  # give the coordinator a moment to bind the port
 
@@ -311,6 +306,14 @@ def main() -> None:
         default=2,
         help="Number of workers to start (only used with 'run', default: 2)",
     )
+    # NEW: The Example Flag
+    parser.add_argument(
+        "-e", "--example",
+        type=str,
+        default="matmul",
+        choices=["matmul", "hashcrack"],
+        help="Which example job to run (default: matmul)",
+    )
     args = parser.parse_args()
 
     os.chdir(ROOT)
@@ -330,7 +333,7 @@ def main() -> None:
     elif args.command == "run":
         cmd_tidy()
         cmd_build()
-        cmd_run(num_workers=args.workers)
+        cmd_run(num_workers=args.workers, example=args.example)
 
     elif args.command == "clean":
         cmd_clean()
