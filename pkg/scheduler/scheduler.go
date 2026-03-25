@@ -15,6 +15,7 @@ type WorkerSnapshot struct {
 	CPUUsage      float32
 	LastHeartbeat time.Time
 	CachedKeys    []string // NEW: Data Locality awareness
+	Capacity      int      // NEW: Maximum tasks this worker can handle at once
 }
 
 // Scheduler picks the best worker for a given task.
@@ -48,8 +49,9 @@ func NewRoundRobin() Scheduler { return &roundRobin{} }
 
 func (r *roundRobin) Pick(workers []WorkerSnapshot, required []string, affinityKeys []string) (string, error) {
 	eligible := filterByTags(workers, required)
+	eligible = filterByCapacity(eligible) // Apply backpressure
 	if len(eligible) == 0 {
-		return "", fmt.Errorf("no eligible workers (required tags: %v)", required)
+		return "", fmt.Errorf("no eligible workers with available capacity (required tags: %v)", required)
 	}
 	r.mu.Lock()
 	id := eligible[r.idx%len(eligible)].ID
@@ -66,8 +68,9 @@ func NewLeastLoaded() Scheduler { return &leastLoaded{} }
 
 func (l *leastLoaded) Pick(workers []WorkerSnapshot, required []string, affinityKeys []string) (string, error) {
 	eligible := filterByTags(workers, required)
+	eligible = filterByCapacity(eligible) // Apply backpressure
 	if len(eligible) == 0 {
-		return "", fmt.Errorf("no eligible workers (required tags: %v)", required)
+		return "", fmt.Errorf("no eligible workers with available capacity (required tags: %v)", required)
 	}
 
 	// Find the maximum affinity score among eligible workers
@@ -79,7 +82,7 @@ func (l *leastLoaded) Pick(workers []WorkerSnapshot, required []string, affinity
 		}
 	}
 
-	// Filter down to only the workers that have the max affinity score,
+	// Filter down to only the workers that have the max affinity score, 
 	// then apply the least-loaded tie breaker.
 	var best WorkerSnapshot
 	first := true
@@ -95,7 +98,7 @@ func (l *leastLoaded) Pick(workers []WorkerSnapshot, required []string, affinity
 			}
 		}
 	}
-
+	
 	if first {
 		return "", fmt.Errorf("no eligible workers")
 	}
@@ -109,8 +112,9 @@ func NewTagAffinity() Scheduler { return &tagAffinity{} }
 
 func (t *tagAffinity) Pick(workers []WorkerSnapshot, required []string, affinityKeys []string) (string, error) {
 	eligible := filterByTags(workers, required)
+	eligible = filterByCapacity(eligible) // Apply backpressure
 	if len(eligible) == 0 {
-		return "", fmt.Errorf("no eligible workers (required tags: %v)", required)
+		return "", fmt.Errorf("no eligible workers with available capacity (required tags: %v)", required)
 	}
 	best := eligible[0]
 	bestScore := tagScore(best, required)
@@ -175,4 +179,17 @@ func hasAllTags(workerTags, required []string) bool {
 		}
 	}
 	return true
+}
+
+// NEW: Filter out workers that are currently at or above their CPU core capacity
+func filterByCapacity(workers []WorkerSnapshot) []WorkerSnapshot {
+	var out []WorkerSnapshot
+	for _, w := range workers {
+		// Multiplier of 2 ensures the worker always has a small queue waiting
+		// so the CPU never stalls between tasks, while preventing hoarding.
+		if w.ActiveTasks < (w.Capacity * 2) {
+			out = append(out, w)
+		}
+	}
+	return out
 }

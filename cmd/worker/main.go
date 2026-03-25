@@ -1,8 +1,3 @@
-// Command worker is the Rivage executor node binary.
-//
-// Usage:
-//
-//	worker -config worker.yaml
 package main
 
 import (
@@ -19,11 +14,18 @@ import (
 
 func main() {
 	cfgPath := flag.String("config", "configs/worker.yaml", "path to worker config file")
+	// NEW: Define the coord-addr flag
+	coordAddrFlag := flag.String("coord-addr", "", "Override coordinator gRPC address from config")
 	flag.Parse()
 
 	cfg, err := config.LoadWorkerConfig(*cfgPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Override the YAML config dynamically if the flag was provided by build.py
+	if *coordAddrFlag != "" {
+		cfg.Coordinator.Addr = *coordAddrFlag
 	}
 
 	w, err := worker.New(cfg)
@@ -34,7 +36,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	log.Printf("Starting worker node (ID: %s)", w.ID())
+	log.Printf("Starting worker node (ID: %s) connecting to %s", w.ID(), cfg.Coordinator.Addr)
 
 	if err := w.Run(ctx); err != nil {
 		log.Fatalf("Worker exited with error: %v", err)

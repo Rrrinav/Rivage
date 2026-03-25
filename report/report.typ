@@ -2,7 +2,7 @@
 #set page(
   paper: "a4",
   margin: (left: 38mm, right: 25mm, top: 25mm, bottom: 25mm),
-  
+
   // Custom double-line border perfectly framed around the text area
   // Border is exactly 10mm away from the text on all sides
   background: place(top + left, dx: 28mm, dy: 15mm)[

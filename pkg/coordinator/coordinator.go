@@ -65,8 +65,8 @@ func (c *Coordinator) Start(ctx context.Context) error {
 	grpcOpts = append(grpcOpts,
 		grpc.MaxRecvMsgSize(maxMsgSize),
 		grpc.MaxSendMsgSize(maxMsgSize),
-		grpc.WriteBufferSize(1024*1024*8),
-		grpc.ReadBufferSize(1024*1024*8),
+		grpc.WriteBufferSize(1024*1024*8), 
+		grpc.ReadBufferSize(1024*1024*8),  
 	)
 
 	if c.cfg.Security.Enabled && c.cfg.Security.TLSCertFile != "" {
@@ -229,7 +229,6 @@ func (c *Coordinator) executeStage(ctx context.Context, jobID string, stage *dag
 }
 
 type taskStatus int32
-
 const (
 	statusPending taskStatus = iota
 	statusRunning
@@ -291,6 +290,11 @@ func (j *job) recordResult(result *pb.TaskResult, maxRetries int32) (retry bool)
 		return false
 	}
 
+	// NEW: Decrement the optimistic in-flight counter
+	if wsRaw, exists := j.coord.workers.Load(state.workerID); exists {
+		wsRaw.(*workerState).inFlight.Add(-1)
+	}
+
 	if result.Status == pb.TaskStatus_TASK_STATUS_FAILED && state.retries < maxRetries {
 		state.retries++
 		state.status = statusPending
@@ -308,7 +312,7 @@ func (j *job) recordResult(result *pb.TaskResult, maxRetries int32) (retry bool)
 	if result.Status == pb.TaskStatus_TASK_STATUS_COMPLETED {
 		state.status = statusCompleted
 		telemetry.Global.TasksCompleted.Inc()
-
+		
 		// NEW: Data Locality Cache Update!
 		// When a task succeeds, we record its affinity keys onto the worker's state
 		// so the scheduler knows this worker is "warm" for these files.
@@ -348,6 +352,11 @@ func (j *job) recordChunk(taskID, jobID, stageID, workerID string, idx int32, da
 
 	if !isFinal {
 		return false
+	}
+
+	// NEW: Decrement the optimistic in-flight counter for chunked tasks
+	if wsRaw, exists := j.coord.workers.Load(workerID); exists {
+		wsRaw.(*workerState).inFlight.Add(-1)
 	}
 
 	j.chunkMu.Lock()
@@ -479,6 +488,12 @@ func (c *Coordinator) watchJob(ctx context.Context, j *job) {
 				state.status = statusRunning
 				state.workerID = workerID
 				state.dispatchedAt = time.Now()
+				
+				// NEW: Optimistically increment the worker's load instantly
+				if wsRaw, ok := c.workers.Load(workerID); ok {
+					wsRaw.(*workerState).inFlight.Add(1)
+				}
+
 				telemetry.Global.TasksDispatched.Inc()
 				telemetry.Global.ActiveTasks.Inc()
 				j.mu.Unlock()
@@ -610,7 +625,7 @@ func (c *Coordinator) dispatch(workerID string, spec *pb.TaskSpec) error {
 			Payload: &pb.CoordinatorMessage_ChunkedTask{ChunkedTask: msg},
 		})
 		ws.sendMu.Unlock()
-
+		
 		if err != nil {
 			return fmt.Errorf("sending chunk %d for task %q: %w", chunkIdx, spec.TaskId, err)
 		}
@@ -628,6 +643,7 @@ type workerState struct {
 	stream        pb.WorkerService_ConnectServer
 	lastHeartbeat time.Time
 	activeTasks   atomic.Int32
+	inFlight      atomic.Int32 // NEW: Instant load tracking
 	cpuUsage      atomic.Value
 	draining      bool
 	cachedKeys    sync.Map // NEW: Tracks which files this worker has already processed
@@ -644,13 +660,17 @@ func (ws *workerState) snapshot() scheduler.WorkerSnapshot {
 		return true
 	})
 
+	// NEW: Add the heartbeat active tasks to the optimistic in-flight tasks
+	totalActive := int(ws.activeTasks.Load() + ws.inFlight.Load())
+
 	return scheduler.WorkerSnapshot{
 		ID:            ws.id,
 		Tags:          ws.caps.Tags,
-		ActiveTasks:   int(ws.activeTasks.Load()),
+		ActiveTasks:   totalActive,
 		CPUUsage:      cpu,
 		LastHeartbeat: ws.lastHeartbeat,
 		CachedKeys:    keys,
+		Capacity:      int(ws.caps.CpuCores), // NEW: Pass the hardware limit to fix the zero-capacity bug
 	}
 }
 

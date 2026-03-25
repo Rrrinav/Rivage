@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"rivage/examples/crmm"
 	"rivage/examples/hashcrack"
 	"rivage/examples/matmul"
 	"rivage/pkg/config"
@@ -17,14 +18,19 @@ import (
 
 func main() {
 	cfgPath := flag.String("config", "configs/coordinator.yaml", "path to coordinator config file")
-
-	// NEW: This is the flag that was missing!
-	exampleFlag := flag.String("example", "matmul", "Which example to run: matmul or hashcrack")
+	exampleFlag := flag.String("example", "matmul", "Which example to run: matmul, hashcrack, or crmm")
+	datastoreFlag := flag.String("datastore", "http://localhost:8081/data", "Base URL for the datastore")
+	grpcAddrFlag := flag.String("grpc-addr", "", "Override gRPC listen address (e.g., 10.0.0.50:50051)")
 	flag.Parse()
 
 	cfg, err := config.LoadCoordinatorConfig(*cfgPath)
 	if err != nil {
 		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Dynamically override the YAML config if the flag is provided by build.py
+	if *grpcAddrFlag != "" {
+		cfg.Server.GRPCAddr = *grpcAddrFlag
 	}
 
 	coord, err := coordinator.New(cfg)
@@ -36,11 +42,27 @@ func main() {
 	defer cancel()
 
 	go func() {
-		// Wait for workers to connect
 		time.Sleep(3 * time.Second)
 
-		// Dynamically switch between workloads based on the build.py flag
 		switch *exampleFlag {
+		case "crmm":
+			log.Printf("[demo] Starting IEEE 2017 CRMM Matrix Multiplication...")
+			matrixSize := 10000
+			tileSize := 2000
+
+			matA := crmm.RandomMatrix(matrixSize)
+			matB := crmm.RandomMatrix(matrixSize)
+
+			start := time.Now()
+			resultMeta, err := crmm.CRMMJob(ctx, coord, matA, matB, tileSize, *datastoreFlag)
+			if err != nil {
+				log.Printf("[demo] CRMM job failed: %v", err)
+				return
+			}
+
+			log.Printf("[demo] CRMM job completed in %v", time.Since(start))
+			log.Printf("[demo] Final CRMM Metadata:\n%s", resultMeta)
+
 		case "matmul":
 			log.Printf("[demo] Starting Distributed Matrix Multiplication...")
 			matrixSize := 10000
@@ -50,7 +72,7 @@ func main() {
 			matB := matmul.RandomMatrix(matrixSize)
 
 			start := time.Now()
-			resultMeta, err := matmul.MatrixJob(ctx, coord, matA, matB, tileSize)
+			resultMeta, err := matmul.MatrixJob(ctx, coord, matA, matB, tileSize, *datastoreFlag)
 			if err != nil {
 				log.Printf("[demo] Matrix job failed: %v", err)
 				return
@@ -61,9 +83,7 @@ func main() {
 
 		case "hashcrack":
 			log.Printf("[demo] Starting CPU-Bound Distributed Hash Cracking...")
-			// "rivage" is 6 letters. The search space is 26^6 = 308 million hashes.
-			// The cluster will divide this into 26 tasks of 11.8 million hashes each.
-			targetPassword := "rivage"
+			targetPassword := "rivage" 
 
 			start := time.Now()
 			resultMeta, err := hashcrack.CrackJob(ctx, coord, targetPassword)
