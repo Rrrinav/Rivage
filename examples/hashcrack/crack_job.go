@@ -14,7 +14,7 @@ import (
 )
 
 // CrackJob distributes a brute-force attack across the cluster
-func CrackJob(ctx context.Context, coord *coordinator.Coordinator, targetPassword string) (string, error) {
+func CrackJob(ctx context.Context, coord *coordinator.Coordinator, targetPassword string, jobID string, resume bool) (string, error) {
 	// Hash the target password so the workers don't actually know what it is
 	hashBytes := md5.Sum([]byte(targetPassword))
 	targetHash := hex.EncodeToString(hashBytes[:])
@@ -35,26 +35,31 @@ func CrackJob(ctx context.Context, coord *coordinator.Coordinator, targetPasswor
 		return "", err
 	}
 
-	// 2. Partition the search space (26 tasks, one for each starting letter)
+	// 2. Partition the search space (676 tasks, one for each 2-letter prefix)
 	var chunks []dag.TaskInput
 	for i := 0; i < len(charset); i++ {
-		prefix := string(charset[i])
-		payload, _ := json.Marshal(map[string]interface{}{
-			"target_hash": targetHash,
-			"charset":     charset,
-			"prefix":      prefix,
-			"max_length":  passLen,
-		})
+		for j := 0; j < len(charset); j++ {
+			prefix := string(charset[i]) + string(charset[j])
+			payload, _ := json.Marshal(map[string]interface{}{
+				"target_hash": targetHash,
+				"charset":     charset,
+				"prefix":      prefix,
+				"max_length":  passLen,
+			})
 
-		chunks = append(chunks, dag.TaskInput{
-			Data:         payload,
-			AffinityKeys: nil, // CPU bound, no data locality needed!
-		})
+			chunks = append(chunks, dag.TaskInput{
+				Data:         payload,
+				AffinityKeys: nil, // CPU bound, no data locality needed!
+			})
+		}
 	}
 
 	// 3. Dispatch the tasks
-	jobID := fmt.Sprintf("crack-%d", time.Now().UnixMilli())
-	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks)
+	if jobID == "" {
+		jobID = fmt.Sprintf("hashcrack-%d", time.Now().UnixMilli())
+	}
+	
+	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks, resume)
 	if err != nil {
 		return "", err
 	}

@@ -20,6 +20,7 @@ type ResultStore struct {
 	mu      sync.RWMutex
 	dir     string            // base temp directory
 	entries map[string]string // taskID → file path
+	durable bool              // NEW: Protects data from being deleted
 }
 
 // New creates a ResultStore whose temp files live under dir.
@@ -32,7 +33,29 @@ func New(dir string) (*ResultStore, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating job temp dir: %w", err)
 	}
-	return &ResultStore{dir: d, entries: make(map[string]string)}, nil
+	return &ResultStore{dir: d, entries: make(map[string]string), durable: false}, nil
+}
+
+// NewDurable creates a ResultStore in a predictable, permanent path.
+// This ensures that massive gigabyte outputs survive a Master reboot.
+func NewDurable(baseDir, uniqueID string) (*ResultStore, error) {
+	if baseDir == "" {
+		baseDir = filepath.Join(".", "rivage_data")
+	}
+	path := filepath.Join(baseDir, "store_"+sanitize(uniqueID))
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return nil, fmt.Errorf("creating durable job dir: %w", err)
+	}
+	// NEW: Mark this store as durable so Close() ignores it!
+	return &ResultStore{dir: path, entries: make(map[string]string), durable: true}, nil
+}
+
+// RecoverEntries scans the disk on reboot and re-links existing task data.
+func (s *ResultStore) RecoverEntries() error {
+	// FIX: We no longer eagerly populate the map with sanitized filenames,
+	// because they don't match the raw TaskIDs with slashes!
+	// Instead, the path() function now lazy-loads them directly from disk.
+	return nil
 }
 
 // Write stores data for taskID, replacing any previous value.
@@ -110,8 +133,11 @@ func (s *ResultStore) Keys() []string {
 	return keys
 }
 
-// Close deletes all temp files and the temp directory.
+// Close deletes all temp files and the temp directory (unless durable).
 func (s *ResultStore) Close() error {
+	if s.durable {
+		return nil // NEW: Preserve the data on disk!
+	}
 	return os.RemoveAll(s.dir)
 }
 
@@ -119,10 +145,21 @@ func (s *ResultStore) path(taskID string) (string, error) {
 	s.mu.RLock()
 	p, ok := s.entries[taskID]
 	s.mu.RUnlock()
-	if !ok {
-		return "", fmt.Errorf("no result stored for task %q", taskID)
+	if ok {
+		return p, nil
 	}
-	return p, nil
+
+	// Lazy-load for WAL recovery!
+	// If the Master asks for a raw taskID that isn't in RAM, check the hard drive directly.
+	diskPath := filepath.Join(s.dir, sanitize(taskID))
+	if _, err := os.Stat(diskPath); err == nil {
+		s.mu.Lock()
+		s.entries[taskID] = diskPath
+		s.mu.Unlock()
+		return diskPath, nil
+	}
+
+	return "", fmt.Errorf("no result stored for task %q", taskID)
 }
 
 // sanitize replaces path-separator characters so the taskID can be a filename.
@@ -137,4 +174,3 @@ func sanitize(id string) string {
 	}
 	return string(out)
 }
-

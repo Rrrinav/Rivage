@@ -11,7 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// Coordinator config
+// ── Coordinator config ────────────────────────────────────────────────────────
+
 type CoordinatorConfig struct {
 	Server    ServerConfig    `yaml:"server"`
 	Security  SecurityConfig  `yaml:"security"`
@@ -40,6 +41,13 @@ type SchedulerConfig struct {
 	TaskTimeout      Duration `yaml:"task_timeout"`
 	WatchdogInterval Duration `yaml:"watchdog_interval"`
 	MaxGlobalRetries int      `yaml:"max_global_retries"`
+
+	// PrefetchMultiplier controls how many tasks can be queued per worker core
+	// beyond what is already running.
+	//   1.0  → exactly one in-flight task per core (good for heavy CPU work like HashCrack)
+	//   2.0+ → over-subscribe cores to hide network round-trip latency (good for MatMul tiles)
+	// Must be > 0. Defaults to 1.0.
+	PrefetchMultiplier float32 `yaml:"prefetch_multiplier"`
 }
 
 type TelemetryConfig struct {
@@ -47,7 +55,7 @@ type TelemetryConfig struct {
 	LogLevel    string `yaml:"log_level"`
 }
 
-// Worker config
+// ── Worker config ─────────────────────────────────────────────────────────────
 
 type WorkerConfig struct {
 	Coordinator WorkerCoordinatorConfig `yaml:"coordinator"`
@@ -77,7 +85,7 @@ type WorkerSecurityConfig struct {
 	TLSCAFile    string `yaml:"tls_ca_file"`
 }
 
-// Duration: yaml/json-serialisable time.Duration
+// ── Duration: yaml/json-serialisable time.Duration ───────────────────────────
 
 type Duration struct{ time.Duration }
 
@@ -104,7 +112,8 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-// Loaders
+// ── Loaders ───────────────────────────────────────────────────────────────────
+
 func LoadCoordinatorConfig(path string) (*CoordinatorConfig, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -137,11 +146,12 @@ func defaultCoordinatorConfig() *CoordinatorConfig {
 			MaxConcurrentJobs: 100,
 		},
 		Scheduler: SchedulerConfig{
-			Algorithm:        "least_loaded",
-			HeartbeatTimeout: Duration{Duration: 10 * time.Second},
-			TaskTimeout:      Duration{Duration: 5 * time.Minute},
-			WatchdogInterval: Duration{Duration: 1 * time.Second},
-			MaxGlobalRetries: 3,
+			Algorithm:          "least_loaded",
+			HeartbeatTimeout:   Duration{Duration: 10 * time.Second},
+			TaskTimeout:        Duration{Duration: 5 * time.Minute},
+			WatchdogInterval:   Duration{Duration: 1 * time.Second},
+			MaxGlobalRetries:   3,
+			PrefetchMultiplier: 1.0,
 		},
 		Telemetry: TelemetryConfig{LogLevel: "info"},
 	}
@@ -162,6 +172,8 @@ func defaultWorkerConfig() *WorkerConfig {
 	}
 }
 
+// ── Validation ────────────────────────────────────────────────────────────────
+
 func (c *CoordinatorConfig) validate() error {
 	if c.Server.GRPCAddr == "" {
 		return fmt.Errorf("server.grpc_addr is required")
@@ -170,6 +182,9 @@ func (c *CoordinatorConfig) validate() error {
 	case "round_robin", "least_loaded", "tag_affinity", "":
 	default:
 		return fmt.Errorf("scheduler.algorithm %q is unknown", c.Scheduler.Algorithm)
+	}
+	if c.Scheduler.PrefetchMultiplier <= 0 {
+		return fmt.Errorf("scheduler.prefetch_multiplier must be > 0 (got %.2f)", c.Scheduler.PrefetchMultiplier)
 	}
 	return nil
 }

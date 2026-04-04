@@ -22,7 +22,7 @@ type PipelineStats struct {
 	ReduceCompute float64 `json:"reduce_compute_sec"`
 }
 
-func CRMMJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]float64, tileSize int, dataStoreURL string) (string, error) {
+func CRMMJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]float64, tileSize int, dataStoreURL string, jobID string, resume bool) (string, error) {
 	n := len(A)
 	if n == 0 {
 		return "", fmt.Errorf("empty matrix")
@@ -52,9 +52,12 @@ func CRMMJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]float
 	}
 
 	chunks := makeCRMMMetadata(dataStoreURL+"/A.bin", dataStoreURL+"/B.bin", n, tileSize, dataStoreURL)
-	jobID := fmt.Sprintf("crmm-%d", time.Now().UnixMilli())
+	
+	if jobID == "" {
+		jobID = fmt.Sprintf("crmm-%d", time.Now().UnixMilli())
+	}
 
-	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks)
+	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks, resume)
 	if err != nil {
 		return "", err
 	}

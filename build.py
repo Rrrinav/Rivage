@@ -179,7 +179,7 @@ def cmd_test() -> None:
     ok("All tests passed")
 
 
-def cmd_run(num_workers: int = 2, example: str = "matmul", role: str = "local", master_ip: str = "localhost") -> None:
+def cmd_run(num_workers: int = 2, example: str = "matmul", role: str = "local", master_ip: str = "localhost", job_id: str = "", resume: bool = False) -> None:
     info(f"Starting deployment role: {role.upper()} [Workers: {
          num_workers}, Example: {example}, Master IP: {master_ip}]")
     os.chdir(ROOT)
@@ -234,13 +234,21 @@ def cmd_run(num_workers: int = 2, example: str = "matmul", role: str = "local", 
 
         step(f"Starting coordinator on {bind_ip}:50051 with example '{
              example}' and datastore '{ds_url}'...")
-        coord_proc = subprocess.Popen([
+        coord_args = [
             str(coordinator),
             "-config", str(coord_cfg),
             "-example", example,
             "-datastore", ds_url,
             "-grpc-addr", f"{bind_ip}:50051"
-        ])
+        ]
+
+        # Add our new job-id and resume flags!
+        if job_id:
+            coord_args.extend(["-job-id", job_id])
+        if resume:
+            coord_args.append("-resume")
+
+        coord_proc = subprocess.Popen(coord_args)
         processes.append(coord_proc)
         time.sleep(1)
 
@@ -321,6 +329,12 @@ def main() -> None:
     parser.add_argument("--master-ip", type=str, default="localhost",
                         help="IP address of the master node for network distributed runs")
 
+    # NEW: The Resume Flags!
+    parser.add_argument("--job-id", type=str, default="",
+                        help="Resume a specific job by ID (WAL recovery)")
+    parser.add_argument("-r", "--resume", action="store_true",
+                        help="Resume a crashed job from the WAL")
+
     args = parser.parse_args()
 
     os.chdir(ROOT)
@@ -337,8 +351,14 @@ def main() -> None:
     elif args.command == "run":
         cmd_tidy()
         cmd_build()
-        cmd_run(num_workers=args.workers, example=args.example,
-                role=args.role, master_ip=args.master_ip)
+        cmd_run(
+            num_workers=args.workers,
+            example=args.example,
+            role=args.role,
+            master_ip=args.master_ip,
+            job_id=args.job_id,
+            resume=args.resume  # Pass it to the runner!
+        )
     elif args.command == "clean":
         cmd_clean()
 
