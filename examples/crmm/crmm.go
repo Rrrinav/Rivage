@@ -62,7 +62,11 @@ func CRMMJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]float
 		return "", err
 	}
 
-	return aggregateFinalMetadata(outputs, n, stats)
+	res, err := aggregateFinalMetadata(outputs, n, stats)
+	if err == nil {
+		coord.RegisterJobResult(jobID, res)
+	}
+	return res, err
 }
 
 func makeCrmmShuffle(stats *PipelineStats, tileSize int, dataStoreURL string) dag.ShuffleFunc {

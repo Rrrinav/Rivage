@@ -65,7 +65,11 @@ func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]flo
 		return "", err
 	}
 
-	return aggregateFinalMetadata(outputs, n, stats)
+	res, err := aggregateFinalMetadata(outputs, n, stats)
+	if err == nil {
+		coord.RegisterJobResult(jobID, res)
+	}
+	return res, err
 }
 
 func rowBandShuffle(outputs []dag.TaskOutput, stats *PipelineStats, dataStoreURL string) (dag.ShuffleResult, error) {

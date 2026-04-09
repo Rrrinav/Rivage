@@ -2,6 +2,7 @@
 package telemetry
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -49,6 +50,37 @@ func (l Level) label() string {
 	}
 }
 
+// --- NEW: Live Log Ring Buffer for Dashboard ---
+var (
+	LogMu   sync.Mutex
+	LogRing []string
+)
+
+const MaxLogs = 150
+
+func AppendLog(msg string) {
+	LogMu.Lock()
+	defer LogMu.Unlock()
+	LogRing = append(LogRing, msg)
+	if len(LogRing) > MaxLogs {
+		LogRing = LogRing[1:]
+	}
+}
+
+// CaptureWriter intercepts standard log outputs and pushes them to the ring buffer
+type CaptureWriter struct {
+	Out io.Writer
+}
+
+func (cw *CaptureWriter) Write(p []byte) (n int, err error) {
+	msg := string(bytes.TrimSpace(p))
+	if msg != "" {
+		AppendLog(msg)
+	}
+	return cw.Out.Write(p)
+}
+// -----------------------------------------------
+
 // Logger is a structured, levelled logger with optional rate-limiting on
 // noisy log sites via LogEvery / LogOnce.
 type Logger struct {
@@ -66,11 +98,12 @@ type suppressState struct {
 }
 
 func New(component string, level Level) *Logger {
-	return newLogger(component, level, os.Stderr)
+	// Use the CaptureWriter to mirror logs to the dashboard
+	return newLogger(component, level, &CaptureWriter{Out: os.Stderr})
 }
 
 func NewWithWriter(component string, level Level, w io.Writer) *Logger {
-	return newLogger(component, level, w)
+	return newLogger(component, level, &CaptureWriter{Out: w})
 }
 
 func newLogger(component string, level Level, w io.Writer) *Logger {
@@ -91,8 +124,6 @@ func (l *Logger) Warn(msg string, fields ...interface{})  { l.emit(LevelWarn, ms
 func (l *Logger) Error(msg string, fields ...interface{}) { l.emit(LevelError, msg, fields) }
 
 // LogEvery emits msg at most once per interval for the given dedup key.
-// Suppressed calls are counted; when the window expires the next emission
-// includes a "suppressed=N" field so you know it was repeating.
 func (l *Logger) LogEvery(key string, interval time.Duration, level Level, msg string, fields ...interface{}) {
 	if int32(level) < l.level.Load() {
 		return

@@ -357,7 +357,7 @@ def main() -> None:
             role=args.role,
             master_ip=args.master_ip,
             job_id=args.job_id,
-            resume=args.resume  # Pass it to the runner!
+            resume=args.resume
         )
     elif args.command == "clean":
         cmd_clean()
