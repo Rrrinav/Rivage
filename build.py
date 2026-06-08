@@ -22,10 +22,6 @@ import sys
 import time
 from pathlib import Path
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Helpers
-# ─────────────────────────────────────────────────────────────────────────────
-
 USE_COLOR = sys.platform != "win32"
 
 
@@ -33,14 +29,25 @@ def _c(code: str, text: str) -> str:
     return f"\033[{code}m{text}\033[0m" if USE_COLOR else text
 
 
-def info(msg: str) -> None: print(_c("1;34", f">>> {msg}"))
-def ok(msg: str) -> None: print(_c("1;32", f"    [OK] {msg}"))
-def warn(msg: str) -> None: print(_c("1;33", f"    [WARN] {msg}"))
-def fatal(msg: str) -> None: print(_c("1;31",
-                                      f"    [ERR] {msg}"), file=sys.stderr); sys.exit(1)
+def info(msg: str) -> None:
+    print(_c("1;34", f">>> {msg}"))
 
 
-def step(msg: str) -> None: print(_c("0;36", f"  -> {msg}"))
+def ok(msg: str) -> None:
+    print(_c("1;32", f"    [OK] {msg}"))
+
+
+def warn(msg: str) -> None:
+    print(_c("1;33", f"    [WARN] {msg}"))
+
+
+def fatal(msg: str) -> None:
+    print(_c("1;31", f"    [ERR] {msg}"), file=sys.stderr)
+    sys.exit(1)
+
+
+def step(msg: str) -> None:
+    print(_c("0;36", f"  -> {msg}"))
 
 
 def get_local_ip() -> str:
@@ -48,16 +55,18 @@ def get_local_ip() -> str:
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # Doesn't even have to be reachable, just forces OS to route a packet
-        s.connect(('10.255.255.255', 1))
+        s.connect(("10.255.255.255", 1))
         ip = s.getsockname()[0]
     except Exception:
-        ip = '127.0.0.1'
+        ip = "127.0.0.1"
     finally:
         s.close()
     return ip
 
 
-def run(cmd: list[str], env: dict | None = None, check: bool = True) -> subprocess.CompletedProcess:
+def run(
+    cmd: list[str], env: dict | None = None, check: bool = True
+) -> subprocess.CompletedProcess:
     merged_env = {**os.environ, **(env or {})}
     step(" ".join(cmd))
     result = subprocess.run(cmd, env=merged_env)
@@ -70,8 +79,10 @@ def run(cmd: list[str], env: dict | None = None, check: bool = True) -> subproce
 def require(binary: str) -> str:
     path = shutil.which(binary)
     if not path:
-        fatal(f"'{
-              binary}' not found in PATH.\n  Install it and make sure it is on your PATH, then re-run.")
+        fatal(
+            f"'{
+              binary}' not found in PATH.\n  Install it and make sure it is on your PATH, then re-run."
+        )
     return path
 
 
@@ -118,7 +129,7 @@ def cmd_proto() -> None:
     go_bin = go_bin_path()
 
     for plugin, import_path in [
-        ("protoc-gen-go",      "google.golang.org/protobuf/cmd/protoc-gen-go@latest"),
+        ("protoc-gen-go", "google.golang.org/protobuf/cmd/protoc-gen-go@latest"),
         ("protoc-gen-go-grpc", "google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest"),
     ]:
         plugin_path = Path(go_bin) / plugin
@@ -128,11 +139,17 @@ def cmd_proto() -> None:
         else:
             step(f"{plugin} found at {plugin_path}")
 
-    run([
-        "protoc", "--go_out=.", "--go_opt=paths=source_relative",
-        "--go-grpc_out=.", "--go-grpc_opt=paths=source_relative",
-        str(proto_file.relative_to(ROOT)),
-    ], env=env)
+    run(
+        [
+            "protoc",
+            "--go_out=.",
+            "--go_opt=paths=source_relative",
+            "--go-grpc_out=.",
+            "--go-grpc_opt=paths=source_relative",
+            str(proto_file.relative_to(ROOT)),
+        ],
+        env=env,
+    )
 
     for stub in ["proto/messages.go", "proto/service.go"]:
         stub_path = ROOT / stub
@@ -156,12 +173,13 @@ def cmd_build() -> None:
     bin_dir = ROOT / "bin"
     bin_dir.mkdir(exist_ok=True)
 
-    coordinator_out = bin_dir / \
-        ("coordinator.exe" if sys.platform == "win32" else "coordinator")
-    worker_out = bin_dir / \
-        ("worker.exe" if sys.platform == "win32" else "worker")
-    datastore_out = bin_dir / \
-        ("datastore.exe" if sys.platform == "win32" else "datastore")
+    coordinator_out = bin_dir / (
+        "coordinator.exe" if sys.platform == "win32" else "coordinator"
+    )
+    worker_out = bin_dir / ("worker.exe" if sys.platform == "win32" else "worker")
+    datastore_out = bin_dir / (
+        "datastore.exe" if sys.platform == "win32" else "datastore"
+    )
 
     run(["go", "build", "-o", str(coordinator_out), "./cmd/coordinator/"])
     ok(f"coordinator -> {coordinator_out}")
@@ -179,18 +197,26 @@ def cmd_test() -> None:
     ok("All tests passed")
 
 
-def cmd_run(num_workers: int = 2, example: str = "matmul", role: str = "local", master_ip: str = "localhost") -> None:
+def cmd_run(
+    num_workers: int = 2,
+    example: str = "matmul",
+    role: str = "local",
+    master_ip: str = "localhost",
+    job_id: str = "",
+    resume: bool = False,
+) -> None:
     info(f"Starting deployment role: {role.upper()} [Workers: {
          num_workers}, Example: {example}, Master IP: {master_ip}]")
     os.chdir(ROOT)
 
     bin_dir = ROOT / "bin"
-    coordinator = bin_dir / \
-        ("coordinator.exe" if sys.platform == "win32" else "coordinator")
-    worker_bin = bin_dir / \
-        ("worker.exe" if sys.platform == "win32" else "worker")
-    datastore_bin = bin_dir / \
-        ("datastore.exe" if sys.platform == "win32" else "datastore")
+    coordinator = bin_dir / (
+        "coordinator.exe" if sys.platform == "win32" else "coordinator"
+    )
+    worker_bin = bin_dir / ("worker.exe" if sys.platform == "win32" else "worker")
+    datastore_bin = bin_dir / (
+        "datastore.exe" if sys.platform == "win32" else "datastore"
+    )
     coord_cfg = ROOT / "configs" / "coordinator.yaml"
     worker_cfg = ROOT / "configs" / "worker.yaml"
 
@@ -221,26 +247,37 @@ def cmd_run(num_workers: int = 2, example: str = "matmul", role: str = "local", 
         ok("All processes stopped safely")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT,  cleanup)
+    signal.signal(signal.SIGINT, cleanup)
     signal.signal(signal.SIGTERM, cleanup)
 
     # MASTER ROLE (Datastore + Coordinator)
     if role in ["local", "master"]:
         step(f"Starting datastore on {bind_ip}:8081...")
-        ds_proc = subprocess.Popen(
-            [str(datastore_bin), "-addr", f"{bind_ip}:8081"])
+        ds_proc = subprocess.Popen([str(datastore_bin), "-addr", f"{bind_ip}:8081"])
         processes.append(ds_proc)
         time.sleep(0.5)
 
         step(f"Starting coordinator on {bind_ip}:50051 with example '{
              example}' and datastore '{ds_url}'...")
-        coord_proc = subprocess.Popen([
+        coord_args = [
             str(coordinator),
-            "-config", str(coord_cfg),
-            "-example", example,
-            "-datastore", ds_url,
-            "-grpc-addr", f"{bind_ip}:50051"
-        ])
+            "-config",
+            str(coord_cfg),
+            "-example",
+            example,
+            "-datastore",
+            ds_url,
+            "-grpc-addr",
+            f"{bind_ip}:50051",
+        ]
+
+        # Add our new job-id and resume flags!
+        if job_id:
+            coord_args.extend(["-job-id", job_id])
+        if resume:
+            coord_args.append("-resume")
+
+        coord_proc = subprocess.Popen(coord_args)
         processes.append(coord_proc)
         time.sleep(1)
 
@@ -251,7 +288,14 @@ def cmd_run(num_workers: int = 2, example: str = "matmul", role: str = "local", 
         for i in range(1, num_workers + 1):
             step(f"Starting worker {i} connecting to '{target_addr}'...")
             wp = subprocess.Popen(
-                [str(worker_bin), "-config", str(worker_cfg), "-coord-addr", target_addr])
+                [
+                    str(worker_bin),
+                    "-config",
+                    str(worker_cfg),
+                    "-coord-addr",
+                    target_addr,
+                ]
+            )
             processes.append(wp)
             time.sleep(0.2)
 
@@ -262,12 +306,19 @@ def cmd_run(num_workers: int = 2, example: str = "matmul", role: str = "local", 
 
         # Display helpful connection string for external workers
         if role == "master":
-            display_ip = master_ip if master_ip not in [
-                "0.0.0.0", "localhost", "127.0.0.1", ""] else get_local_ip()
+            display_ip = (
+                master_ip
+                if master_ip not in ["0.0.0.0", "localhost", "127.0.0.1", ""]
+                else get_local_ip()
+            )
             print()
             info("To connect workers from other machines, run this command on them:")
             print(
-                _c("1;32", f"    python build.py run 4 --role worker --master-ip {display_ip}"))
+                _c(
+                    "1;32",
+                    f"    python build.py run 4 --role worker --master-ip {display_ip}",
+                )
+            )
             print()
 
     if role in ["local", "worker"]:
@@ -298,28 +349,59 @@ def cmd_clean() -> None:
     else:
         step("Nothing to clean")
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Entry point
-# ─────────────────────────────────────────────────────────────────────────────
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Rivage distributed build and run tool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("command", nargs="?", default="build", choices=[
-                        "build", "proto", "test", "run", "clean"])
-    parser.add_argument("workers", nargs="?", type=int, default=2,
-                        help="Number of workers (if role is local or worker)")
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="build",
+        choices=["build", "proto", "test", "run", "clean"],
+    )
+    parser.add_argument(
+        "workers",
+        nargs="?",
+        type=int,
+        default=2,
+        help="Number of workers (if role is local or worker)",
+    )
 
     # Flags for dynamic testing and distributed deployment
-    parser.add_argument("-e", "--example", type=str, default="matmul",
-                        choices=["matmul", "hashcrack", "crmm"], help="Example to run")
-    parser.add_argument("--role", type=str, default="local",
-                        choices=["local", "master", "worker"], help="Deployment role for the node")
-    parser.add_argument("--master-ip", type=str, default="localhost",
-                        help="IP address of the master node for network distributed runs")
+    parser.add_argument(
+        "-e",
+        "--example",
+        type=str,
+        default="matmul",
+        choices=["matmul", "hashcrack", "crmm"],
+        help="Example to run",
+    )
+    parser.add_argument(
+        "--role",
+        type=str,
+        default="local",
+        choices=["local", "master", "worker"],
+        help="Deployment role for the node",
+    )
+    parser.add_argument(
+        "--master-ip",
+        type=str,
+        default="localhost",
+        help="IP address of the master node for network distributed runs",
+    )
+
+    # NEW: The Resume Flags!
+    parser.add_argument(
+        "--job-id",
+        type=str,
+        default="",
+        help="Resume a specific job by ID (WAL recovery)",
+    )
+    parser.add_argument(
+        "-r", "--resume", action="store_true", help="Resume a crashed job from the WAL"
+    )
 
     args = parser.parse_args()
 
@@ -337,8 +419,14 @@ def main() -> None:
     elif args.command == "run":
         cmd_tidy()
         cmd_build()
-        cmd_run(num_workers=args.workers, example=args.example,
-                role=args.role, master_ip=args.master_ip)
+        cmd_run(
+            num_workers=args.workers,
+            example=args.example,
+            role=args.role,
+            master_ip=args.master_ip,
+            job_id=args.job_id,
+            resume=args.resume,
+        )
     elif args.command == "clean":
         cmd_clean()
 

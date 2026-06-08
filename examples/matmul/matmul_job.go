@@ -23,7 +23,7 @@ type PipelineStats struct {
 	ReduceCompute float64 `json:"reduce_compute_sec"`
 }
 
-func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]float64, tileSize int, dataStoreURL string) (string, error) {
+func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]float64, tileSize int, dataStoreURL string, jobID string, resume bool) (string, error) {
 	n := len(A)
 	if n == 0 {
 		return "", fmt.Errorf("empty matrix")
@@ -55,13 +55,21 @@ func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]flo
 	}
 
 	chunks := makeTileMetadata(dataStoreURL+"/A.bin", dataStoreURL+"/B.bin", n, tileSize, dataStoreURL)
-	jobID := fmt.Sprintf("matmul-%d", time.Now().UnixMilli())
-	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks)
+	
+	if jobID == "" {
+		jobID = fmt.Sprintf("matmul-%d", time.Now().UnixMilli())
+	}
+	
+	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks, resume)
 	if err != nil {
 		return "", err
 	}
 
-	return aggregateFinalMetadata(outputs, n, stats)
+	res, err := aggregateFinalMetadata(outputs, n, stats)
+	if err == nil {
+		coord.RegisterJobResult(jobID, res)
+	}
+	return res, err
 }
 
 func rowBandShuffle(outputs []dag.TaskOutput, stats *PipelineStats, dataStoreURL string) (dag.ShuffleResult, error) {

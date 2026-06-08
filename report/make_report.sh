@@ -1,2 +1,2 @@
 set -x
-typst compile --font-path "./report/" "./report/report.typ"
+typst compile --font-path "./report/" --font-path "/usr/share/fonts/" "./report/report.typ"

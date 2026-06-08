@@ -14,8 +14,7 @@ import (
 )
 
 // CrackJob distributes a brute-force attack across the cluster
-func CrackJob(ctx context.Context, coord *coordinator.Coordinator, targetPassword string) (string, error) {
-	// Hash the target password so the workers don't actually know what it is
+func CrackJob(ctx context.Context, coord *coordinator.Coordinator, targetPassword string, jobID string, resume bool) (string, error) {
 	hashBytes := md5.Sum([]byte(targetPassword))
 	targetHash := hex.EncodeToString(hashBytes[:])
 	charset := "abcdefghijklmnopqrstuvwxyz"
@@ -24,7 +23,6 @@ func CrackJob(ctx context.Context, coord *coordinator.Coordinator, targetPasswor
 	log.Printf("[hashcrack] Target Hash: %s (Length: %d)", targetHash, passLen)
 	log.Printf("[hashcrack] Search Space: %d combinations", intPow(len(charset), passLen))
 
-	// 1. Define a 1-stage CPU pipeline
 	pipeline, err := dag.New("hashcrack").
 		Stage("brute_force",
 			dag.ScriptExecutor("python3", "examples/hashcrack/crack.py"),
@@ -35,32 +33,38 @@ func CrackJob(ctx context.Context, coord *coordinator.Coordinator, targetPasswor
 		return "", err
 	}
 
-	// 2. Partition the search space (26 tasks, one for each starting letter)
 	var chunks []dag.TaskInput
 	for i := 0; i < len(charset); i++ {
-		prefix := string(charset[i])
-		payload, _ := json.Marshal(map[string]interface{}{
-			"target_hash": targetHash,
-			"charset":     charset,
-			"prefix":      prefix,
-			"max_length":  passLen,
-		})
+		for j := 0; j < len(charset); j++ {
+			prefix := string(charset[i]) + string(charset[j])
+			payload, _ := json.Marshal(map[string]interface{}{
+				"target_hash": targetHash,
+				"charset":     charset,
+				"prefix":      prefix,
+				"max_length":  passLen,
+			})
 
-		chunks = append(chunks, dag.TaskInput{
-			Data:         payload,
-			AffinityKeys: nil, // CPU bound, no data locality needed!
-		})
+			chunks = append(chunks, dag.TaskInput{
+				Data:         payload,
+				AffinityKeys: nil, 
+			})
+		}
 	}
 
-	// 3. Dispatch the tasks
-	jobID := fmt.Sprintf("crack-%d", time.Now().UnixMilli())
-	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks)
+	if jobID == "" {
+		jobID = fmt.Sprintf("hashcrack-%d", time.Now().UnixMilli())
+	}
+	
+	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks, resume)
 	if err != nil {
 		return "", err
 	}
 
-	// 4. Aggregate results to find the winner
-	return processResults(outputs)
+	res, err := processResults(outputs)
+	if err == nil {
+		coord.RegisterJobResult(jobID, res)
+	}
+	return res, err
 }
 
 func processResults(outputs []dag.TaskOutput) (string, error) {
@@ -92,7 +96,6 @@ func processResults(outputs []dag.TaskOutput) (string, error) {
 		"recovered_password":          foundPassword,
 		"winning_task_prefix":         winnerPrefix,
 		"total_aggregate_compute_sec": totalCompute,
-		"network_io_bottleneck":       "Eliminated (Pure CPU Workload)",
 	}
 
 	bytes, _ := json.MarshalIndent(summary, "", "  ")

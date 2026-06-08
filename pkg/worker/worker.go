@@ -29,6 +29,12 @@ const (
 	maxConcurrentUploads = 4
 )
 
+type workerStats struct {
+	tasksCompleted atomic.Int32
+	tasksFailed    atomic.Int32
+	computeMs      atomic.Int64
+}
+
 type Worker struct {
 	id  string
 	cfg *config.WorkerConfig
@@ -40,13 +46,15 @@ type Worker struct {
 
 	cancelRunning sync.Map
 	sendSem       chan struct{}
-	streamMu      sync.Mutex // NEW: Serializes all outgoing gRPC stream.Send calls
+	streamMu      sync.Mutex
 
 	inboundMu     sync.Mutex
 	inboundChunks map[string]*inboundAssembler
+
+	stats workerStats
 }
 
-// inboundAssembler streams chunks directly to disk so the worker uses ~0 bytes of RAM
+// inboundAssembler streams incoming chunks straight to disk — zero RAM overhead.
 type inboundAssembler struct {
 	first *pb.ChunkedTaskSpec
 	file  *os.File
@@ -69,10 +77,18 @@ func New(cfg *config.WorkerConfig) (*Worker, error) {
 		inboundChunks: make(map[string]*inboundAssembler),
 	}
 	w.cpuGauge.Store(float32(0))
+	w.log.Info("Worker initialised",
+		"id", id,
+		"concurrency", concurrency,
+		"tags", cfg.Tags,
+		"coordinator", cfg.Coordinator.Addr,
+	)
 	return w, nil
 }
 
 func (w *Worker) ID() string { return w.id }
+
+// ── Connection loop ───────────────────────────────────────────────────────────
 
 func (w *Worker) Run(ctx context.Context) error {
 	maxAttempts := w.cfg.Coordinator.MaxReconnectAttempts
@@ -80,20 +96,36 @@ func (w *Worker) Run(ctx context.Context) error {
 	if reconnectInterval == 0 {
 		reconnectInterval = 5 * time.Second
 	}
+
 	attempt := 0
 	for {
+		connectStart := time.Now()
 		if err := w.runOnce(ctx); err != nil {
 			if ctx.Err() != nil {
+				w.log.Info("Context cancelled, shutting down")
 				return ctx.Err()
 			}
-			w.log.Warn("Disconnected from coordinator", "err", err, "attempt", attempt)
+			w.log.Warn("Disconnected from coordinator",
+				"err", err,
+				"uptime", time.Since(connectStart).Round(time.Second),
+				"attempt", attempt+1,
+			)
+		} else {
+			w.log.Info("Connection closed cleanly",
+				"uptime", time.Since(connectStart).Round(time.Second),
+			)
 		}
+
 		attempt++
 		if maxAttempts > 0 && attempt >= maxAttempts {
 			return fmt.Errorf("max reconnect attempts (%d) reached", maxAttempts)
 		}
-		backoff := time.Duration(math.Min(float64(reconnectInterval)*math.Pow(1.5, float64(attempt)), float64(60*time.Second)))
-		w.log.Info("Reconnecting", "in", backoff)
+
+		backoff := time.Duration(math.Min(
+			float64(reconnectInterval)*math.Pow(1.5, float64(attempt)),
+			float64(60*time.Second),
+		))
+		w.log.Info("Reconnecting", "in", backoff.Round(time.Millisecond), "attempt", attempt+1)
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -125,8 +157,9 @@ func (w *Worker) runOnce(ctx context.Context) error {
 	}
 	ack, ok := ackMsg.Payload.(*pb.CoordinatorMessage_Ack)
 	if !ok || !ack.Ack.Accepted {
-		return fmt.Errorf("coordinator rejected registration")
+		return fmt.Errorf("coordinator rejected registration: %s", ack.Ack.GetMessage())
 	}
+	w.log.Info("Registered with coordinator", "msg", ack.Ack.Message)
 
 	hbCtx, hbCancel := context.WithCancel(ctx)
 	defer hbCancel()
@@ -146,29 +179,59 @@ func (w *Worker) runOnce(ctx context.Context) error {
 
 		switch p := msg.Payload.(type) {
 		case *pb.CoordinatorMessage_Task:
-			go w.executeTask(ctx, p.Task, resultCh)
+			spec := p.Task
+			w.log.Debug("Received task",
+				"task", spec.TaskId,
+				"stage", spec.StageId,
+				"input_bytes", len(spec.InputData),
+			)
+			go w.executeTask(ctx, spec, resultCh)
 
 		case *pb.CoordinatorMessage_ChunkedTask:
-			if spec := w.receiveChunk(p.ChunkedTask); spec != nil {
+			cr := p.ChunkedTask
+			w.log.Debug("Received chunk",
+				"task", cr.TaskId,
+				"chunk", cr.ChunkIndex,
+				"bytes", len(cr.Data),
+				"final", cr.IsFinal,
+			)
+			if spec := w.receiveChunk(cr); spec != nil {
+				w.log.Info("Chunked task fully received, executing",
+					"task", spec.TaskId,
+					"stage", spec.StageId,
+				)
 				go w.executeTask(ctx, spec, resultCh)
 			}
 
 		case *pb.CoordinatorMessage_Cancel:
-			if cancel, ok := w.cancelRunning.Load(p.Cancel.TaskId); ok {
+			taskID := p.Cancel.TaskId
+			if cancel, ok := w.cancelRunning.Load(taskID); ok {
+				w.log.Info("Cancelling task", "task", taskID)
 				cancel.(context.CancelFunc)()
 			}
 
+		case *pb.CoordinatorMessage_JobComplete:
+			w.log.Info("Job completed globally",
+				"job_id", p.JobComplete.JobId,
+				"my_completed", w.stats.tasksCompleted.Load(),
+				"my_failed", w.stats.tasksFailed.Load(),
+				"my_compute_ms", w.stats.computeMs.Load(),
+			)
+
 		case *pb.CoordinatorMessage_Drain:
+			w.log.Info("Drain requested, finishing in-flight tasks")
 			w.streamMu.Lock()
 			stream.Send(&pb.WorkerMessage{Payload: &pb.WorkerMessage_Drain{Drain: &pb.DrainRequest{WorkerId: w.id}}})
 			w.streamMu.Unlock()
 			w.waitForIdle()
+			w.log.Info("Drain complete, disconnecting")
 			return nil
 		}
 	}
 }
 
-// receiveChunk streams gRPC chunks straight to the hard drive
+// ── Chunk assembly ────────────────────────────────────────────────────────────
+
 func (w *Worker) receiveChunk(cr *pb.ChunkedTaskSpec) *pb.TaskSpec {
 	w.inboundMu.Lock()
 	defer w.inboundMu.Unlock()
@@ -177,7 +240,7 @@ func (w *Worker) receiveChunk(cr *pb.ChunkedTaskSpec) *pb.TaskSpec {
 	if !exists {
 		f, err := os.CreateTemp(w.tempDir(), "rivage-in-*")
 		if err != nil {
-			w.log.Error("Failed to create inbound temp file", "err", err)
+			w.log.Error("Failed to create inbound temp file", "task", cr.TaskId, "err", err)
 			return nil
 		}
 		asm = &inboundAssembler{first: cr, file: f, path: f.Name()}
@@ -185,7 +248,9 @@ func (w *Worker) receiveChunk(cr *pb.ChunkedTaskSpec) *pb.TaskSpec {
 	}
 
 	if len(cr.Data) > 0 {
-		asm.file.Write(cr.Data)
+		if _, err := asm.file.Write(cr.Data); err != nil {
+			w.log.Error("Failed to write chunk to disk", "task", cr.TaskId, "err", err)
+		}
 	}
 
 	if !cr.IsFinal {
@@ -195,12 +260,21 @@ func (w *Worker) receiveChunk(cr *pb.ChunkedTaskSpec) *pb.TaskSpec {
 	delete(w.inboundChunks, cr.TaskId)
 	asm.file.Close()
 
+	fi, _ := os.Stat(asm.path)
+	totalBytes := int64(0)
+	if fi != nil {
+		totalBytes = fi.Size()
+	}
+	w.log.Debug("Inbound chunk stream assembled",
+		"task", cr.TaskId,
+		"chunks", cr.ChunkIndex+1,
+		"bytes", totalBytes,
+	)
+
 	first := asm.first
 	if first.Env == nil {
 		first.Env = make(map[string]string)
 	}
-	
-	// Pass the disk file to the Python script via Environment Variable
 	first.Env["RIVAGE_INPUT_FILE"] = asm.path
 
 	return &pb.TaskSpec{
@@ -216,9 +290,11 @@ func (w *Worker) receiveChunk(cr *pb.ChunkedTaskSpec) *pb.TaskSpec {
 		MaxRetries:     first.MaxRetries,
 		RetryCount:     first.RetryCount,
 		RequiredTags:   first.RequiredTags,
-		InputData:      nil, // Zero RAM usage!
+		InputData:      nil,
 	}
 }
+
+// ── Task execution ────────────────────────────────────────────────────────────
 
 type taskResult struct {
 	proto    *pb.TaskResult
@@ -226,6 +302,7 @@ type taskResult struct {
 }
 
 func (w *Worker) executeTask(ctx context.Context, spec *pb.TaskSpec, resultCh chan<- *taskResult) {
+	// Acquire concurrency slot.
 	select {
 	case w.sem <- struct{}{}:
 		defer func() { <-w.sem }()
@@ -236,7 +313,6 @@ func (w *Worker) executeTask(ctx context.Context, spec *pb.TaskSpec, resultCh ch
 	w.activeTasks.Add(1)
 	defer w.activeTasks.Add(-1)
 
-	start := time.Now()
 	timeout := w.cfg.Execution.DefaultTaskTimeout.Duration
 	if spec.TimeoutSeconds > 0 {
 		timeout = time.Duration(spec.TimeoutSeconds) * time.Second
@@ -246,9 +322,48 @@ func (w *Worker) executeTask(ctx context.Context, spec *pb.TaskSpec, resultCh ch
 	w.cancelRunning.Store(spec.TaskId, cancel)
 	defer w.cancelRunning.Delete(spec.TaskId)
 
+	w.log.Info("Task starting",
+		"task", spec.TaskId,
+		"stage", spec.StageId,
+		"cmd", spec.Command,
+		"timeout", timeout,
+		"active", w.activeTasks.Load(),
+		"slots_free", cap(w.sem)-len(w.sem),
+	)
+
+	start := time.Now()
 	result := w.runSubprocess(taskCtx, spec)
-	result.proto.DurationMs = time.Since(start).Milliseconds()
+	durationMs := time.Since(start).Milliseconds()
+	result.proto.DurationMs = durationMs
 	result.proto.WorkerId = w.id
+
+	if result.proto.Status == pb.TaskStatus_TASK_STATUS_COMPLETED {
+		w.stats.tasksCompleted.Add(1)
+		w.stats.computeMs.Add(durationMs)
+		outBytes := int64(len(result.proto.OutputData))
+		if result.diskPath != "" {
+			if fi, err := os.Stat(result.diskPath); err == nil {
+				outBytes = fi.Size()
+			}
+		}
+		w.log.Info("Task completed",
+			"task", spec.TaskId,
+			"stage", spec.StageId,
+			"duration_ms", durationMs,
+			"output_bytes", outBytes,
+			"my_total_completed", w.stats.tasksCompleted.Load(),
+		)
+	} else {
+		w.stats.tasksFailed.Add(1)
+		w.log.Error("Task failed",
+			"task", spec.TaskId,
+			"stage", spec.StageId,
+			"duration_ms", durationMs,
+			"err", result.proto.ErrorLog,
+			"my_total_failed", w.stats.tasksFailed.Load(),
+		)
+	}
+
 	resultCh <- result
 }
 
@@ -260,6 +375,7 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 		return &taskResult{proto: base}
 	}
 
+	// Write input to disk if it arrived inline (not via chunked path).
 	inputFile := spec.Env["RIVAGE_INPUT_FILE"]
 	if inputFile == "" && len(spec.InputData) > 0 {
 		f, err := os.CreateTemp(w.tempDir(), "rivage-in-*")
@@ -271,15 +387,21 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 				spec.Env = make(map[string]string)
 			}
 			spec.Env["RIVAGE_INPUT_FILE"] = inputFile
+		} else {
+			w.log.Warn("Could not write input to disk, falling back to stdin", "task", spec.TaskId, "err", err)
 		}
 	}
 	if inputFile != "" {
 		defer os.Remove(inputFile)
 	}
 
+	// Write shipped code to a temp file.
 	var tempCode string
 	if len(spec.Code) > 0 {
-		f, _ := os.CreateTemp(w.tempDir(), "rivage-code-*")
+		f, err := os.CreateTemp(w.tempDir(), "rivage-code-*")
+		if err != nil {
+			return fail(fmt.Sprintf("creating temp code file: %v", err))
+		}
 		f.Write(spec.Code)
 		f.Close()
 		os.Chmod(f.Name(), 0700)
@@ -287,6 +409,7 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 		defer os.Remove(tempCode)
 	}
 
+	// Substitute {CODE} placeholder in args.
 	args := make([]string, len(spec.Args))
 	for i, a := range spec.Args {
 		if a == "{CODE}" && tempCode != "" {
@@ -300,13 +423,16 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 		command = tempCode
 	}
 
-	outFile, _ := os.CreateTemp(w.tempDir(), "rivage-out-*")
+	outFile, err := os.CreateTemp(w.tempDir(), "rivage-out-*")
+	if err != nil {
+		return fail(fmt.Sprintf("creating output temp file: %v", err))
+	}
 	outPath := outFile.Name()
 
 	stderrBuf := &cappedBuffer{cap: maxStderrBytes}
 
 	cmd := exec.CommandContext(ctx, command, args...)
-	cmd.Stdin = bytes.NewReader(spec.InputData) // Fallback for small json payloads
+	cmd.Stdin = bytes.NewReader(spec.InputData) // fallback stdin for scripts that read it directly
 	cmd.Stdout = outFile
 	cmd.Stderr = stderrBuf
 	cmd.Env = os.Environ()
@@ -315,12 +441,20 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 
+	w.log.Debug("Subprocess starting", "task", spec.TaskId, "cmd", command, "args", args)
+
 	runErr := cmd.Run()
 	outFile.Close()
 
 	if runErr != nil {
 		os.Remove(outPath)
-		return fail(fmt.Sprintf("error: %v\nSTDERR:\n%s", runErr, stderrBuf.String()))
+		stderr := stderrBuf.String()
+		errMsg := fmt.Sprintf("subprocess error: %v", runErr)
+		if stderr != "" {
+			errMsg += "\nSTDERR:\n" + stderr
+		}
+		w.log.Debug("Subprocess stderr", "task", spec.TaskId, "stderr", stderr)
+		return fail(errMsg)
 	}
 
 	fi, _ := os.Stat(outPath)
@@ -330,15 +464,27 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 	}
 
 	base.Status = pb.TaskStatus_TASK_STATUS_COMPLETED
+
+	// Small outputs: read into memory and clean up.
 	if outSize <= 4*1024*1024 {
-		data, _ := os.ReadFile(outPath)
+		data, readErr := os.ReadFile(outPath)
 		os.Remove(outPath)
+		if readErr != nil {
+			return fail(fmt.Sprintf("reading output file: %v", readErr))
+		}
 		base.OutputData = data
 		return &taskResult{proto: base}
 	}
 
+	// Large outputs: leave on disk and stream back in chunks.
+	w.log.Debug("Large output, will stream back",
+		"task", spec.TaskId,
+		"output_bytes", outSize,
+	)
 	return &taskResult{proto: base, diskPath: outPath}
 }
+
+// ── Result sender ─────────────────────────────────────────────────────────────
 
 func (w *Worker) resultSender(ctx context.Context, stream pb.WorkerService_ConnectClient, ch <-chan *taskResult) {
 	for {
@@ -364,16 +510,21 @@ func (w *Worker) resultSender(ctx context.Context, stream pb.WorkerService_Conne
 
 func (w *Worker) sendResult(ctx context.Context, stream pb.WorkerService_ConnectClient, tr *taskResult) {
 	result := tr.proto
+
 	if tr.diskPath == "" {
+		w.log.Debug("Sending inline result", "task", result.TaskId, "bytes", len(result.OutputData))
 		w.streamMu.Lock()
 		stream.Send(&pb.WorkerMessage{Payload: &pb.WorkerMessage_Result{Result: result}})
 		w.streamMu.Unlock()
 		return
 	}
+
 	defer os.Remove(tr.diskPath)
 	f, err := os.Open(tr.diskPath)
 	if err != nil {
+		w.log.Error("Failed to open output file for streaming", "task", result.TaskId, "err", err)
 		result.Status = pb.TaskStatus_TASK_STATUS_FAILED
+		result.ErrorLog = fmt.Sprintf("opening output for streaming: %v", err)
 		w.streamMu.Lock()
 		stream.Send(&pb.WorkerMessage{Payload: &pb.WorkerMessage_Result{Result: result}})
 		w.streamMu.Unlock()
@@ -381,20 +532,31 @@ func (w *Worker) sendResult(ctx context.Context, stream pb.WorkerService_Connect
 	}
 	defer f.Close()
 
+	fi, _ := f.Stat()
+	totalBytes := int64(0)
+	if fi != nil {
+		totalBytes = fi.Size()
+	}
+	w.log.Debug("Streaming large result", "task", result.TaskId, "bytes", totalBytes)
+
 	seqNum := int32(0)
 	cr := transfer.NewChunkReader(f, transfer.DefaultChunkSize)
 	for {
 		chunk, err := cr.Next()
 		isFinal := err == io.EOF || (err != nil)
-		
-		// BUG FIX: We MUST send the packet if there is data OR if it is the final termination packet
+
 		if len(chunk) > 0 || isFinal {
 			w.streamMu.Lock()
 			stream.Send(&pb.WorkerMessage{
 				Payload: &pb.WorkerMessage_ChunkedResult{
 					ChunkedResult: &pb.ChunkedTaskResult{
-						TaskId: result.TaskId, JobId: result.JobId, StageId: result.StageId,
-						WorkerId: result.WorkerId, ChunkIndex: seqNum, Data: chunk, IsFinal: isFinal,
+						TaskId:     result.TaskId,
+						JobId:      result.JobId,
+						StageId:    result.StageId,
+						WorkerId:   result.WorkerId,
+						ChunkIndex: seqNum,
+						Data:       chunk,
+						IsFinal:    isFinal,
 					},
 				},
 			})
@@ -405,22 +567,37 @@ func (w *Worker) sendResult(ctx context.Context, stream pb.WorkerService_Connect
 			break
 		}
 	}
+	w.log.Debug("Finished streaming result", "task", result.TaskId, "chunks", seqNum)
 }
 
+// Heartbeat
 func (w *Worker) heartbeatLoop(ctx context.Context, stream pb.WorkerService_ConnectClient) {
-	ticker := time.NewTicker(3 * time.Second)
+	interval := w.cfg.Execution.HeartbeatInterval.Duration
+	if interval == 0 {
+		interval = 3 * time.Second
+	}
+	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
+			active := w.activeTasks.Load()
+			w.log.Debug("Heartbeat",
+				"active_tasks", active,
+				"cpu", w.cpuGauge.Load().(float32),
+				"completed", w.stats.tasksCompleted.Load(),
+				"failed", w.stats.tasksFailed.Load(),
+			)
 			w.streamMu.Lock()
 			stream.Send(&pb.WorkerMessage{
 				Payload: &pb.WorkerMessage_Heartbeat{
 					Heartbeat: &pb.Heartbeat{
-						WorkerId: w.id, ActiveTasks: w.activeTasks.Load(),
-						CpuUsage: w.cpuGauge.Load().(float32), TimestampUnix: time.Now().Unix(),
+						WorkerId:      w.id,
+						ActiveTasks:   active,
+						CpuUsage:      w.cpuGauge.Load().(float32),
+						TimestampUnix: time.Now().Unix(),
 					},
 				},
 			})
@@ -429,20 +606,32 @@ func (w *Worker) heartbeatLoop(ctx context.Context, stream pb.WorkerService_Conn
 	}
 }
 
-func (w *Worker) register(stream pb.WorkerService_ConnectClient) error {
-	caps := &pb.WorkerCapabilities{
-		WorkerId: w.id, CpuCores: int32(runtime.NumCPU()),
-		MemoryBytes: 8 * 1024 * 1024 * 1024, Tags: w.cfg.Tags,
-	}
+// ── Registration & dial ───────────────────────────────────────────────────────
 
+func (w *Worker) register(stream pb.WorkerService_ConnectClient) error {
+	concurrency := w.cfg.Execution.MaxConcurrentTasks
+	if concurrency <= 0 {
+		concurrency = runtime.NumCPU()
+	}
+	caps := &pb.WorkerCapabilities{
+		WorkerId:    w.id,
+		CpuCores:    int32(concurrency),
+		MemoryBytes: 8 * 1024 * 1024 * 1024,
+		Tags:        w.cfg.Tags,
+	}
 	if w.cfg.Security.SharedSecret != "" {
 		signer := security.NewTokenSigner(w.cfg.Security.SharedSecret)
 		caps.WorkerToken = signer.Issue(w.id, 24*time.Hour)
 	}
-
 	hostname, _ := os.Hostname()
 	caps.Hostname = hostname
-	
+
+	w.log.Info("Registering",
+		"cores", caps.CpuCores,
+		"tags", caps.Tags,
+		"hostname", hostname,
+	)
+
 	w.streamMu.Lock()
 	defer w.streamMu.Unlock()
 	return stream.Send(&pb.WorkerMessage{Payload: &pb.WorkerMessage_Register{Register: caps}})
@@ -451,11 +640,13 @@ func (w *Worker) register(stream pb.WorkerService_ConnectClient) error {
 func (w *Worker) dial() (*grpc.ClientConn, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithDefaultCallOptions(
-		grpc.MaxCallRecvMsgSize(16*1024*1024), grpc.MaxCallSendMsgSize(16*1024*1024),
+		grpc.MaxCallRecvMsgSize(16*1024*1024),
+		grpc.MaxCallSendMsgSize(16*1024*1024),
 	))
-	
-	// NEW: 8MB TCP Buffers for extreme network throughput
-	opts = append(opts, grpc.WithWriteBufferSize(1024*1024*8), grpc.WithReadBufferSize(1024*1024*8))
+	opts = append(opts,
+		grpc.WithWriteBufferSize(1024*1024*8),
+		grpc.WithReadBufferSize(1024*1024*8),
+	)
 
 	sec := w.cfg.Security
 	if sec.TLSCertFile != "" || sec.TLSCAFile != "" {
@@ -468,9 +659,12 @@ func (w *Worker) dial() (*grpc.ClientConn, error) {
 		opts = append(opts, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 
+	w.log.Debug("Dialing coordinator", "addr", w.cfg.Coordinator.Addr)
 	//nolint:staticcheck
 	return grpc.Dial(w.cfg.Coordinator.Addr, opts...)
 }
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
 
 func (w *Worker) tempDir() string {
 	if d := w.cfg.Execution.TempDir; d != "" {
@@ -480,6 +674,9 @@ func (w *Worker) tempDir() string {
 }
 
 func (w *Worker) waitForIdle() {
+	if w.activeTasks.Load() > 0 {
+		w.log.Info("Waiting for in-flight tasks to finish", "active", w.activeTasks.Load())
+	}
 	for w.activeTasks.Load() > 0 {
 		time.Sleep(100 * time.Millisecond)
 	}

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rivage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body class="bg-gray-100 text-gray-800 font-sans p-6 min-h-screen">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <!-- Header -->
+        <div class="flex justify-between items-center bg-white p-4 rounded shadow-sm border border-gray-200">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Rivage Control Plane</h1>
+                <p class="text-sm text-gray-500">Cluster Status & Telemetry</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="status-dot" class="h-3 w-3 bg-gray-400 rounded-full"></span>
+                <span id="status-text" class="text-sm font-bold text-gray-600 uppercase">Idle</span>
+            </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-4 gap-4">
+            <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
+                <div class="text-xs text-gray-500 font-bold mb-1 uppercase">Active Workers</div>
+                <div class="text-3xl font-bold text-gray-800" id="kpi-workers">0</div>
+            </div>
+            <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
+                <div class="text-xs text-gray-500 font-bold mb-1 uppercase">Throughput</div>
+                <div class="text-3xl font-bold text-blue-600"><span id="kpi-tps">0</span> <span
+                        class="text-base text-gray-400 font-normal">tps</span></div>
+            </div>
+            <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
+                <div class="text-xs text-gray-500 font-bold mb-1 uppercase">Tasks Completed</div>
+                <div class="text-3xl font-bold text-green-600" id="kpi-completed">0</div>
+            </div>
+            <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
+                <div class="text-xs text-gray-500 font-bold mb-1 uppercase">Data Processed</div>
+                <div class="text-3xl font-bold text-purple-600" id="kpi-bytes">0 B</div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Area -->
+        <div class="grid grid-cols-3 gap-6">
+
+            <!-- Left Column: Chart & Logs -->
+            <div class="col-span-2 space-y-6">
+                <!-- Chart -->
+                <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
+                    <h2 class="text-sm font-bold text-gray-700 mb-4 border-b pb-2">Cluster Telemetry (Rolling 60s)</h2>
+                    <div class="h-64">
+                        <canvas id="telemetryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Logs -->
+                <div class="bg-gray-900 rounded shadow-sm border border-gray-800 flex flex-col h-[300px]">
+                    <div
+                        class="px-4 py-2 bg-gray-800 border-b border-gray-700 text-xs font-mono text-gray-400 flex justify-between">
+                        <span>system.log</span>
+                        <span class="animate-pulse text-green-500">Live</span>
+                    </div>
+                    <pre id="terminal-output"
+                        class="p-4 text-[12px] font-mono text-gray-300 overflow-y-auto flex-1 whitespace-pre-wrap break-all">
+                    </pre>
+                </div>
+            </div>
+
+            <!-- Right Column: Workers, Jobs, Results -->
+            <div class="col-span-1 space-y-6">
+
+                <!-- Workers -->
+                <div class="bg-white p-4 rounded shadow-sm border border-gray-200 h-[280px] flex flex-col">
+                    <h2 class="text-sm font-bold text-gray-700 mb-2 border-b pb-2">Worker Fleet</h2>
+                    <div id="workers-container" class="overflow-y-auto space-y-2 pr-2"></div>
+                </div>
+
+                <!-- Jobs -->
+                <div class="bg-white p-4 rounded shadow-sm border border-gray-200 h-[160px] flex flex-col">
+                    <h2 class="text-sm font-bold text-gray-700 mb-2 border-b pb-2">Active Jobs</h2>
+                    <div id="jobs-container" class="overflow-y-auto space-y-3 pr-2"></div>
+                </div>
+
+                <!-- Results -->
+                <div class="bg-white p-4 rounded shadow-sm border border-gray-200 h-[230px] flex flex-col">
+                    <h2 class="text-sm font-bold text-gray-700 mb-2 border-b pb-2">Final Outputs</h2>
+                    <div id="results-container" class="overflow-y-auto space-y-4 pr-2"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Utilities
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Chart Setup
+        const ctx = document.getElementById('telemetryChart').getContext('2d');
+        const maxDataPoints = 60;
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(maxDataPoints).fill(''),
+                datasets: [
+                    {label: 'Tasks / Sec', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0, yAxisID: 'y', data: Array(maxDataPoints).fill(0)},
+                    {label: 'Avg CPU %', borderColor: '#64748b', borderWidth: 2, borderDash: [4, 4], tension: 0.1, pointRadius: 0, yAxisID: 'y1', data: Array(maxDataPoints).fill(0)}
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, animation: false,
+                plugins: {legend: {position: 'top', labels: {color: '#64748b', usePointStyle: true, boxWidth: 6}}},
+                scales: {
+                    x: {display: false},
+                    y: {title: {display: true, text: 'TPS', color: '#94a3b8', font: {size: 10}}, beginAtZero: true, suggestedMax: 10},
+                    y1: {title: {display: true, text: 'CPU %', color: '#94a3b8', font: {size: 10}}, position: 'right', min: 0, max: 100, grid: {display: false}}
+                }
+            }
+        });
+
+        // State Tracking
+        let lastCompleted = 0;
+        let lastTime = Date.now();
+
+        async function fetchState() {
+            try {
+                const res = await fetch('/api/state');
+                const data = await res.json();
+                render(data);
+            } catch (e) {
+                console.error("Failed to fetch state:", e);
+            }
+        }
+
+        function render(data) {
+            const now = Date.now();
+            const dt = (now - lastTime) / 1000;
+
+            let tps = 0;
+            if (lastCompleted > 0 && dt > 0) {
+                tps = Math.max(0, (data.metrics.completed - lastCompleted) / dt);
+            }
+            lastCompleted = data.metrics.completed;
+            lastTime = now;
+
+            // Safely calculate averages
+            let avgCpu = 0;
+            let activeTasks = 0;
+            const workers = data.workers || [];
+            if (workers.length > 0) {
+                avgCpu = workers.reduce((acc, w) => acc + w.cpu, 0) / workers.length;
+                activeTasks = workers.reduce((acc, w) => acc + w.active, 0);
+            }
+
+            // Idle detection
+            const numJobs = (data.jobs || []).length;
+            const isIdle = (numJobs === 0 && tps === 0 && activeTasks === 0);
+
+            if (isIdle) {
+                document.getElementById('status-dot').className = "h-3 w-3 bg-gray-300 rounded-full";
+                document.getElementById('status-text').innerText = "IDLE";
+            } else {
+                document.getElementById('status-dot').className = "h-3 w-3 bg-green-500 rounded-full animate-pulse";
+                document.getElementById('status-text').innerText = "PROCESSING";
+            }
+
+            // Chart Pausing Logic: Push zero if idle to wind down the graph smoothly, then stop pushing.
+            const lastTps = chart.data.datasets[0].data[chart.data.datasets[0].data.length - 1];
+            const lastCpu = chart.data.datasets[1].data[chart.data.datasets[1].data.length - 1];
+
+            if (!isIdle || lastTps > 0 || lastCpu > 0) {
+                chart.data.datasets[0].data.push(isIdle ? 0 : tps);
+                chart.data.datasets[0].data.shift();
+                chart.data.datasets[1].data.push(isIdle ? 0 : avgCpu);
+                chart.data.datasets[1].data.shift();
+                chart.update();
+            }
+
+            // Update KPIs
+            document.getElementById('kpi-workers').innerText = workers.length;
+            document.getElementById('kpi-tps').innerText = tps.toFixed(1);
+            document.getElementById('kpi-completed').innerText = data.metrics.completed.toLocaleString();
+            document.getElementById('kpi-bytes').innerText = formatBytes(data.metrics.bytes);
+
+            // Render Jobs
+            const jobsContainer = document.getElementById('jobs-container');
+            if (numJobs === 0) {
+                jobsContainer.innerHTML = '<p class="text-sm text-gray-400 italic">No active jobs.</p>';
+            } else {
+                jobsContainer.innerHTML = data.jobs.map(job => `
+                    <div class="border border-gray-200 rounded p-2">
+                        <div class="flex justify-between items-end mb-1">
+                            <span class="font-mono text-xs font-bold text-gray-800 truncate pr-2">${job.id}</span>
+                            <span class="text-xs text-gray-500 whitespace-nowrap">${job.done} / ${job.total} (${job.percentage}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                            <div class="bg-blue-500 h-full transition-all duration-300" style="width: ${job.percentage}%"></div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Render Results
+            const resContainer = document.getElementById('results-container');
+            if (data.results && Object.keys(data.results).length > 0) {
+                resContainer.innerHTML = Object.entries(data.results).map(([id, res]) => `
+                    <div class="border border-gray-200 rounded p-2 bg-gray-50">
+                        <div class="text-xs font-bold text-gray-800 mb-1 border-b border-gray-200 pb-1 flex justify-between">
+                            <span class="truncate pr-2">${id}</span>
+                            <span class="text-green-600">Finished</span>
+                        </div>
+                        <pre class="text-[11px] text-gray-600 font-mono whitespace-pre-wrap">${res}</pre>
+                    </div>
+                `).join('');
+            } else {
+                resContainer.innerHTML = '<p class="text-sm text-gray-400 italic">No completed jobs yet.</p>';
+            }
+
+            // Render Workers
+            const workersContainer = document.getElementById('workers-container');
+            if (workers.length === 0) {
+                workersContainer.innerHTML = '<div class="text-center text-gray-400 text-sm italic py-4">No workers connected</div>';
+            } else {
+                workersContainer.innerHTML = workers.map(w => {
+                    const cpuColor = w.cpu > 85 ? 'bg-red-500' : (w.cpu > 50 ? 'bg-yellow-500' : 'bg-green-500');
+                    return `
+                    <div class="bg-gray-50 p-2 rounded border border-gray-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="font-mono text-xs font-bold text-gray-700 truncate w-32" title="${w.id}">${w.id.split('-').slice(0, 2).join('-')}..</span>
+                            <span class="text-[10px] text-gray-500 font-medium">${w.uptime}</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <div class="flex-1">
+                                <div class="flex justify-between text-[10px] font-bold text-gray-500 mb-1">
+                                    <span>CPU ${w.cpu.toFixed(0)}%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-1">
+                                    <div class="${cpuColor} h-1 rounded-full transition-all duration-300" style="width: ${w.cpu}%"></div>
+                                </div>
+                            </div>
+                            <div class="text-right w-12 border-l border-gray-200 pl-2">
+                                <div class="text-[9px] font-bold text-gray-400">TASKS</div>
+                                <div class="text-[11px] font-bold text-gray-800">${w.active}</div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            }
+
+            // Render Auto-Scrolling Terminal Logs
+            const term = document.getElementById('terminal-output');
+            const logs = data.logs || [];
+            if (logs.length > 0) {
+                const newText = logs.join('\n');
+                if (term.textContent !== newText) {
+                    const isScrolledToBottom = term.scrollHeight - term.clientHeight <= term.scrollTop + 20;
+                    term.textContent = newText;
+                    if (isScrolledToBottom) {
+                        term.scrollTop = term.scrollHeight;
+                    }
+                }
+            }
+        }
+
+        // Polling loop
+        setInterval(fetchState, 1000);
+        fetchState();
+    </script>
+</body>
+
+</html>

@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -37,19 +39,26 @@ type Coordinator struct {
 	httpSrv   *http.Server
 	startTime time.Time
 
-	workers sync.Map
-	jobs    sync.Map
-	schedMu sync.Mutex
+	workers       sync.Map
+	jobs          sync.Map
+	schedMu       sync.Mutex
+	recentResults sync.Map // NEW: Stores final outputs for the dashboard
 }
 
 func New(cfg *config.CoordinatorConfig) (*Coordinator, error) {
-	sched, err := scheduler.New(cfg.Scheduler.Algorithm)
+	sched, err := scheduler.New(cfg.Scheduler.Algorithm, cfg.Scheduler.PrefetchMultiplier)
 	if err != nil {
 		return nil, err
 	}
+	
+	// NEW: Intercept standard log outputs (like the [demo] logs) into the telemetry buffer
+	log.SetOutput(&telemetry.CaptureWriter{Out: os.Stderr})
+
 	level := telemetry.ParseLevel(cfg.Telemetry.LogLevel)
 	logger := telemetry.New("coordinator", level)
+	
 	c := &Coordinator{cfg: cfg, sched: sched, log: logger, startTime: time.Now()}
+	
 	if cfg.Security.Enabled {
 		if cfg.Security.SharedSecret == "" {
 			return nil, fmt.Errorf("security is enabled but shared_secret is empty")
@@ -65,12 +74,16 @@ func (c *Coordinator) Start(ctx context.Context) error {
 	grpcOpts = append(grpcOpts,
 		grpc.MaxRecvMsgSize(maxMsgSize),
 		grpc.MaxSendMsgSize(maxMsgSize),
-		grpc.WriteBufferSize(1024*1024*8), 
-		grpc.ReadBufferSize(1024*1024*8),  
+		grpc.WriteBufferSize(1024*1024*8),
+		grpc.ReadBufferSize(1024*1024*8),
 	)
 
 	if c.cfg.Security.Enabled && c.cfg.Security.TLSCertFile != "" {
-		tlsCfg, err := security.LoadServerTLS(c.cfg.Security.TLSCertFile, c.cfg.Security.TLSKeyFile, c.cfg.Security.TLSCAFile)
+		tlsCfg, err := security.LoadServerTLS(
+			c.cfg.Security.TLSCertFile,
+			c.cfg.Security.TLSKeyFile,
+			c.cfg.Security.TLSCAFile,
+		)
 		if err != nil {
 			return fmt.Errorf("loading TLS: %w", err)
 		}
@@ -86,16 +99,27 @@ func (c *Coordinator) Start(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("gRPC listen %s: %w", c.cfg.Server.GRPCAddr, err)
 	}
-	c.log.Info("gRPC server listening", "addr", c.cfg.Server.GRPCAddr)
+	c.log.Info("gRPC server listening",
+		"addr", c.cfg.Server.GRPCAddr,
+		"algorithm", c.cfg.Scheduler.Algorithm,
+		"prefetch_multiplier", c.cfg.Scheduler.PrefetchMultiplier,
+	)
 
 	if c.cfg.Server.HTTPAddr != "" {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/healthz", c.handleHealthz)
 		mux.HandleFunc("/status", c.handleStatus)
 		mux.HandleFunc("/metrics", c.handleMetrics)
+		
+		mux.HandleFunc("/api/state", c.handleAPIState)
+		
+		webDir := filepath.Join(".", "web")
+		os.MkdirAll(webDir, 0755)
+		mux.Handle("/", http.FileServer(http.Dir(webDir)))
+
 		c.httpSrv = &http.Server{Addr: c.cfg.Server.HTTPAddr, Handler: mux}
 		go func() {
-			c.log.Info("HTTP admin server listening", "addr", c.cfg.Server.HTTPAddr)
+			c.log.Info("HTTP admin dashboard listening", "url", "http://localhost"+c.cfg.Server.HTTPAddr)
 			if err := c.httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				c.log.Error("HTTP server error", "err", err)
 			}
@@ -123,17 +147,52 @@ func (c *Coordinator) Start(ctx context.Context) error {
 }
 
 // RunJob executes a pipeline and merges outputs to JSON.
-func (c *Coordinator) RunJob(ctx context.Context, jobID string, pipeline *dag.Pipeline, inputChunks []dag.TaskInput) ([]byte, error) {
-	outputs, err := c.RunJobRaw(ctx, jobID, pipeline, inputChunks)
+func (c *Coordinator) RunJob(ctx context.Context, jobID string, pipeline *dag.Pipeline, inputChunks []dag.TaskInput, resume bool) ([]byte, error) {
+	outputs, err := c.RunJobRaw(ctx, jobID, pipeline, inputChunks, resume)
 	if err != nil {
 		return nil, err
 	}
-	return mergeFinalOutputs(outputs)
+	res, err := mergeFinalOutputs(outputs)
+	
+	if err == nil {
+		c.recentResults.Store(jobID, string(res))
+	}
+	
+	return res, err
 }
 
-// RunJobRaw executes a pipeline and returns the raw binary TaskOutputs (bypasses JSON merge).
-func (c *Coordinator) RunJobRaw(ctx context.Context, jobID string, pipeline *dag.Pipeline, inputChunks []dag.TaskInput) ([]dag.TaskOutput, error) {
-	c.log.Info("Starting job", "job_id", jobID, "pipeline", pipeline.Name, "chunks", len(inputChunks))
+// NEW: Expose a method so custom jobs (like Hashcrack/MatMul) can manually push their aggregated results to the UI
+func (c *Coordinator) RegisterJobResult(jobID string, result string) {
+	c.recentResults.Store(jobID, result)
+}
+
+// RunJobRaw executes a pipeline and returns the raw binary TaskOutputs.
+func (c *Coordinator) RunJobRaw(ctx context.Context, jobID string, pipeline *dag.Pipeline, inputChunks []dag.TaskInput, resume bool) ([]dag.TaskOutput, error) {
+	c.log.Info("Job starting",
+		"job_id", jobID,
+		"pipeline", pipeline.Name,
+		"input_chunks", len(inputChunks),
+		"stages", len(pipeline.Order),
+		"resume_mode", resume,
+	)
+	jobStart := time.Now()
+
+	defer func() {
+		wall := time.Since(jobStart)
+		computeMs := telemetry.Global.TotalComputeMs.Load()
+		speedup := 0.0
+		if wall.Milliseconds() > 0 {
+			speedup = float64(computeMs) / float64(wall.Milliseconds())
+		}
+		c.log.Info("Job finished",
+			"job_id", jobID,
+			"wall", wall.Round(time.Millisecond),
+			"compute", time.Duration(computeMs)*time.Millisecond,
+			"speedup", fmt.Sprintf("%.2fx", speedup),
+			"bytes", telemetry.Global.BytesProcessed.Load(),
+		)
+		c.broadcastJobComplete(jobID)
+	}()
 
 	codeCache := map[string][]byte{}
 	for _, stageID := range pipeline.Order {
@@ -154,7 +213,7 @@ func (c *Coordinator) RunJobRaw(ctx context.Context, jobID string, pipeline *dag
 
 	for i, stageID := range pipeline.Order {
 		stage := pipeline.StageByID(stageID)
-		c.log.Info("Starting stage", "job_id", jobID, "stage", stageID, "index", i)
+		c.log.Info("Stage starting", "job_id", jobID, "stage", stageID, "index", i+1, "of", len(pipeline.Order))
 
 		var tasks []*pb.TaskSpec
 		if i == 0 {
@@ -174,30 +233,72 @@ func (c *Coordinator) RunJobRaw(ctx context.Context, jobID string, pipeline *dag
 			continue
 		}
 
-		outputs, err := c.executeStage(ctx, jobID, stage, tasks)
+		outputs, err := c.executeStage(ctx, jobID, stage, tasks, resume)
 		if err != nil {
 			return nil, fmt.Errorf("stage %q failed: %w", stageID, err)
 		}
 		stageOutputs[stageID] = outputs
-		c.log.Info("Stage completed", "job_id", jobID, "stage", stageID, "tasks", len(outputs))
+		c.log.Info("Stage finished", "job_id", jobID, "stage", stageID, "tasks_completed", len(outputs))
 	}
 
 	lastStageID := pipeline.Order[len(pipeline.Order)-1]
 	return stageOutputs[lastStageID], nil
 }
 
-func (c *Coordinator) executeStage(ctx context.Context, jobID string, stage *dag.Stage, tasks []*pb.TaskSpec) ([]dag.TaskOutput, error) {
-	rs, err := store.New("")
-	if err != nil {
-		return nil, fmt.Errorf("creating result store: %w", err)
+func (c *Coordinator) executeStage(ctx context.Context, jobID string, stage *dag.Stage, tasks []*pb.TaskSpec, resume bool) ([]dag.TaskOutput, error) {
+	dataDir := filepath.Join(".", "rivage_data", "jobs")
+	storeID := jobID + "_" + stage.ID
+	walPath := filepath.Join(dataDir, sanitize(storeID)+".wal")
+
+	if !resume {
+		c.log.Info("Starting fresh, clearing previous state", "stage", stage.ID)
+		os.Remove(walPath)
+		os.RemoveAll(filepath.Join(dataDir, "store_"+sanitize(storeID)))
 	}
-	defer rs.Close()
+
+	rs, err := store.NewDurable(dataDir, storeID)
+	if err != nil {
+		return nil, fmt.Errorf("creating durable store: %w", err)
+	}
+	defer rs.Close() 
+	rs.RecoverEntries()
+
+	wal, recoveredState, err := openWAL(walPath)
+	if err != nil {
+		return nil, fmt.Errorf("opening WAL: %w", err)
+	}
+	defer wal.Close()
 
 	j := newJob(jobID+"/"+stage.ID, tasks, rs, c)
+	j.wal = wal
 	c.jobs.Store(j.id, j)
 	defer c.jobs.Delete(j.id)
 
-	go c.watchJob(ctx, j)
+	recoveredCount := 0
+	for _, state := range j.tasks {
+		lastEvt, ok := recoveredState[state.spec.TaskId]
+		if ok && lastEvt == walEventCompleted {
+			if _, err := rs.Size(state.spec.TaskId); err == nil {
+				state.status = statusCompleted
+				state.result = &pb.TaskResult{
+					TaskId: state.spec.TaskId,
+					Status: pb.TaskStatus_TASK_STATUS_COMPLETED,
+				}
+				j.doneTasks.Add(1)
+				recoveredCount++
+			}
+		}
+	}
+
+	if recoveredCount > 0 {
+		c.log.Info("Recovered job state from WAL", "stage", stage.ID, "restored_tasks", recoveredCount, "remaining", j.totalTasks-recoveredCount)
+	}
+
+	if int(j.doneTasks.Load()) >= j.totalTasks {
+		close(j.allDone)
+	} else {
+		go c.watchJob(ctx, j)
+	}
 
 	select {
 	case <-j.allDone:
@@ -229,6 +330,7 @@ func (c *Coordinator) executeStage(ctx context.Context, jobID string, stage *dag
 }
 
 type taskStatus int32
+
 const (
 	statusPending taskStatus = iota
 	statusRunning
@@ -255,6 +357,7 @@ type job struct {
 	allDone    chan struct{}
 	closed     atomic.Bool
 	store      *store.ResultStore
+	wal        *jobWAL 
 
 	chunkMu         sync.Mutex
 	chunkAssemblers map[string]*chunkAssembler
@@ -290,7 +393,6 @@ func (j *job) recordResult(result *pb.TaskResult, maxRetries int32) (retry bool)
 		return false
 	}
 
-	// NEW: Decrement the optimistic in-flight counter
 	if wsRaw, exists := j.coord.workers.Load(state.workerID); exists {
 		wsRaw.(*workerState).inFlight.Add(-1)
 	}
@@ -300,22 +402,33 @@ func (j *job) recordResult(result *pb.TaskResult, maxRetries int32) (retry bool)
 		state.status = statusPending
 		state.workerID = ""
 		telemetry.Global.TasksRetried.Inc()
+		j.coord.log.Warn("Task failed, will retry",
+			"task", result.TaskId,
+			"attempt", state.retries,
+			"max_retries", maxRetries,
+			"err", result.ErrorLog,
+		)
 		return true
 	}
 
 	if err := j.store.Write(result.TaskId, result.OutputData); err != nil {
-		_ = err
+		j.coord.log.Error("Failed to persist task result", "task", result.TaskId, "err", err)
 	}
 	result.OutputData = nil
 
 	state.result = result
 	if result.Status == pb.TaskStatus_TASK_STATUS_COMPLETED {
 		state.status = statusCompleted
+		j.wal.Log(walEventCompleted, result.TaskId) 
 		telemetry.Global.TasksCompleted.Inc()
-		
-		// NEW: Data Locality Cache Update!
-		// When a task succeeds, we record its affinity keys onto the worker's state
-		// so the scheduler knows this worker is "warm" for these files.
+		telemetry.Global.TotalComputeMs.Add(result.DurationMs)
+
+		j.coord.log.Info("Task completed",
+			"task", result.TaskId,
+			"worker", state.workerID,
+			"duration_ms", result.DurationMs,
+		)
+
 		if len(state.spec.AffinityKeys) > 0 {
 			if wsRaw, exists := j.coord.workers.Load(state.workerID); exists {
 				ws := wsRaw.(*workerState)
@@ -324,10 +437,15 @@ func (j *job) recordResult(result *pb.TaskResult, maxRetries int32) (retry bool)
 				}
 			}
 		}
-
 	} else {
 		state.status = statusFailed
+		j.wal.Log(walEventFailed, result.TaskId) 
 		telemetry.Global.TasksFailed.Inc()
+		j.coord.log.Error("Task failed (no retries left)",
+			"task", result.TaskId,
+			"worker", state.workerID,
+			"err", result.ErrorLog,
+		)
 	}
 
 	telemetry.Global.ActiveTasks.Dec()
@@ -350,19 +468,28 @@ func (j *job) recordChunk(taskID, jobID, stageID, workerID string, idx int32, da
 	asm.lastIdx = idx
 	j.chunkMu.Unlock()
 
+	telemetry.Global.BytesProcessed.Add(int64(len(data)))
+
 	if !isFinal {
 		return false
 	}
 
-	// NEW: Decrement the optimistic in-flight counter for chunked tasks
 	if wsRaw, exists := j.coord.workers.Load(workerID); exists {
 		wsRaw.(*workerState).inFlight.Add(-1)
 	}
 
 	j.chunkMu.Lock()
 	assembled := asm.buf.Bytes()
+	totalBytes := len(assembled)
 	delete(j.chunkAssemblers, taskID)
 	j.chunkMu.Unlock()
+
+	j.coord.log.Debug("Chunked task assembled",
+		"task", taskID,
+		"worker", workerID,
+		"chunks", idx+1,
+		"bytes", totalBytes,
+	)
 
 	result := &pb.TaskResult{
 		TaskId:     taskID,
@@ -430,7 +557,7 @@ func (c *Coordinator) makeTaskSpec(jobID string, stage *dag.Stage, taskID string
 		Command:        exec.Command,
 		Args:           exec.Args,
 		InputData:      input.Data,
-		AffinityKeys:   input.AffinityKeys, // Attaches the affinity keys to the task
+		AffinityKeys:   input.AffinityKeys,
 		Env:            env,
 		TimeoutSeconds: int64(timeout),
 		MaxRetries:     maxRetries,
@@ -469,6 +596,7 @@ func (c *Coordinator) watchJob(ctx context.Context, j *job) {
 	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
+
 	for {
 		select {
 		case <-j.allDone:
@@ -477,38 +605,67 @@ func (c *Coordinator) watchJob(ctx context.Context, j *job) {
 			return
 		case <-ticker.C:
 			pending := j.snapshotPending()
+			if len(pending) == 0 {
+				continue
+			}
+			dispatched := 0
+			skipped := 0
 			for _, state := range pending {
 				workerID, err := c.pickWorker(state.spec.RequiredTags, state.spec.AffinityKeys)
 				if err != nil {
-					c.log.Warn("No worker available", "task", state.spec.TaskId, "err", err)
-					break
+					skipped++
+					c.log.LogEvery(
+						"no-worker/"+j.id, 5*time.Second,
+						telemetry.LevelWarn, "No available worker for pending task(s)",
+						"job", j.id,
+						"pending", len(pending),
+						"err", err,
+					)
+					break 
 				}
 
 				j.mu.Lock()
 				state.status = statusRunning
 				state.workerID = workerID
 				state.dispatchedAt = time.Now()
-				
-				// NEW: Optimistically increment the worker's load instantly
+
+				j.wal.Log(walEventDispatched, state.spec.TaskId)
+
 				if wsRaw, ok := c.workers.Load(workerID); ok {
 					wsRaw.(*workerState).inFlight.Add(1)
 				}
-
 				telemetry.Global.TasksDispatched.Inc()
 				telemetry.Global.ActiveTasks.Inc()
 				j.mu.Unlock()
-				c.log.Debug("Dispatched task", "task", state.spec.TaskId, "worker", workerID)
+
+				dispatched++
+				c.log.Debug("Dispatching task", "task", state.spec.TaskId, "worker", workerID)
 
 				go func(wID string, tState *taskState) {
 					if err := c.dispatch(wID, tState.spec); err != nil {
-						c.log.Error("Dispatch failed", "worker", wID, "task", tState.spec.TaskId, "err", err)
+						c.log.Error("Dispatch failed",
+							"worker", wID,
+							"task", tState.spec.TaskId,
+							"err", err,
+						)
 						j.mu.Lock()
 						tState.status = statusPending
 						tState.workerID = ""
 						telemetry.Global.ActiveTasks.Dec()
 						j.mu.Unlock()
+						if wsRaw, ok := c.workers.Load(wID); ok {
+							wsRaw.(*workerState).inFlight.Add(-1)
+						}
 					}
 				}(workerID, state)
+			}
+			if dispatched > 0 {
+				c.log.Debug("Dispatched batch",
+					"job", j.id,
+					"dispatched", dispatched,
+					"skipped", skipped,
+					"pending_remaining", len(pending)-dispatched,
+				)
 			}
 		}
 	}
@@ -524,7 +681,10 @@ func (c *Coordinator) reapDeadWorkerTasks(j *job) {
 		}
 		wsRaw, ok := c.workers.Load(state.workerID)
 		if !ok {
-			c.log.Warn("Worker gone, re-queuing task", "worker", state.workerID, "task", state.spec.TaskId)
+			c.log.Warn("Worker gone, re-queuing task",
+				"worker", state.workerID,
+				"task", state.spec.TaskId,
+			)
 			state.status = statusPending
 			state.workerID = ""
 			telemetry.Global.ActiveTasks.Dec()
@@ -535,7 +695,11 @@ func (c *Coordinator) reapDeadWorkerTasks(j *job) {
 		lastSeen := ws.lastHeartbeat
 		ws.mu.RUnlock()
 		if time.Since(lastSeen) > timeout {
-			c.log.Warn("Worker heartbeat timeout, re-queuing task", "worker", state.workerID, "task", state.spec.TaskId)
+			c.log.Warn("Worker heartbeat timeout, re-queuing task",
+				"worker", state.workerID,
+				"task", state.spec.TaskId,
+				"last_seen_ago", time.Since(lastSeen).Round(time.Millisecond),
+			)
 			state.status = statusPending
 			state.workerID = ""
 			telemetry.Global.ActiveTasks.Dec()
@@ -583,7 +747,11 @@ func (c *Coordinator) dispatch(workerID string, spec *pb.TaskSpec) error {
 		return err
 	}
 
-	c.log.Debug("Chunked dispatch", "task", spec.TaskId, "input_bytes", len(spec.InputData))
+	c.log.Debug("Chunked dispatch",
+		"task", spec.TaskId,
+		"worker", workerID,
+		"input_bytes", len(spec.InputData),
+	)
 
 	input := spec.InputData
 	totalSize := int64(len(input))
@@ -593,12 +761,10 @@ func (c *Coordinator) dispatch(workerID string, spec *pb.TaskSpec) error {
 		if end > len(input) {
 			end = len(input)
 		}
-		chunk := input[offset:end]
 		isFinal := end == len(input)
-
 		msg := &pb.ChunkedTaskSpec{
 			ChunkIndex: chunkIdx,
-			Data:       chunk,
+			Data:       input[offset:end],
 			IsFinal:    isFinal,
 		}
 		if chunkIdx == 0 {
@@ -614,7 +780,7 @@ func (c *Coordinator) dispatch(workerID string, spec *pb.TaskSpec) error {
 			msg.MaxRetries = spec.MaxRetries
 			msg.RetryCount = spec.RetryCount
 			msg.RequiredTags = spec.RequiredTags
-			msg.AffinityKeys = spec.AffinityKeys // Pass down the affinity on chunk stream
+			msg.AffinityKeys = spec.AffinityKeys
 			msg.TotalSize = totalSize
 		} else {
 			msg.TaskId = spec.TaskId
@@ -625,7 +791,6 @@ func (c *Coordinator) dispatch(workerID string, spec *pb.TaskSpec) error {
 			Payload: &pb.CoordinatorMessage_ChunkedTask{ChunkedTask: msg},
 		})
 		ws.sendMu.Unlock()
-		
 		if err != nil {
 			return fmt.Errorf("sending chunk %d for task %q: %w", chunkIdx, spec.TaskId, err)
 		}
@@ -643,10 +808,10 @@ type workerState struct {
 	stream        pb.WorkerService_ConnectServer
 	lastHeartbeat time.Time
 	activeTasks   atomic.Int32
-	inFlight      atomic.Int32 // NEW: Instant load tracking
+	inFlight      atomic.Int32 // optimistic load: tasks dispatched but not yet heartbeat-confirmed
 	cpuUsage      atomic.Value
 	draining      bool
-	cachedKeys    sync.Map // NEW: Tracks which files this worker has already processed
+	cachedKeys    sync.Map // data-locality: keys this worker has already processed
 }
 
 func (ws *workerState) snapshot() scheduler.WorkerSnapshot {
@@ -660,17 +825,14 @@ func (ws *workerState) snapshot() scheduler.WorkerSnapshot {
 		return true
 	})
 
-	// NEW: Add the heartbeat active tasks to the optimistic in-flight tasks
-	totalActive := int(ws.activeTasks.Load() + ws.inFlight.Load())
-
 	return scheduler.WorkerSnapshot{
 		ID:            ws.id,
 		Tags:          ws.caps.Tags,
-		ActiveTasks:   totalActive,
+		ActiveTasks:   int(ws.activeTasks.Load() + ws.inFlight.Load()),
 		CPUUsage:      cpu,
 		LastHeartbeat: ws.lastHeartbeat,
 		CachedKeys:    keys,
-		Capacity:      int(ws.caps.CpuCores), // NEW: Pass the hardware limit to fix the zero-capacity bug
+		Capacity:      int(ws.caps.CpuCores),
 	}
 }
 
@@ -704,7 +866,12 @@ func (s *grpcServer) Connect(stream pb.WorkerService_ConnectServer) error {
 	}
 
 	p, _ := grpcpeer.FromContext(stream.Context())
-	c.log.Info("Worker registered", "id", caps.WorkerId, "cores", caps.CpuCores, "addr", p.Addr)
+	c.log.Info("Worker registered",
+		"id", caps.WorkerId,
+		"cores", caps.CpuCores,
+		"tags", caps.Tags,
+		"addr", p.Addr,
+	)
 
 	ws := &workerState{
 		id:            caps.WorkerId,
@@ -766,6 +933,7 @@ func (s *grpcServer) Connect(stream pb.WorkerService_ConnectServer) error {
 			ws.mu.Lock()
 			ws.draining = true
 			ws.mu.Unlock()
+			c.log.Info("Worker entering drain mode", "id", ws.id)
 		}
 	}
 }
@@ -788,6 +956,22 @@ func (c *Coordinator) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "rivage_tasks_retried_total %d\n", telemetry.Global.TasksRetried.Load())
 	fmt.Fprintf(w, "rivage_active_workers %d\n", telemetry.Global.ActiveWorkers.Load())
 	fmt.Fprintf(w, "rivage_active_tasks %d\n", telemetry.Global.ActiveTasks.Load())
+	fmt.Fprintf(w, "rivage_total_compute_ms %d\n", telemetry.Global.TotalComputeMs.Load())
+	fmt.Fprintf(w, "rivage_bytes_processed_total %d\n", telemetry.Global.BytesProcessed.Load())
+}
+
+func (c *Coordinator) broadcastJobComplete(jobID string) {
+	c.workers.Range(func(key, value interface{}) bool {
+		ws := value.(*workerState)
+		ws.sendMu.Lock()
+		ws.stream.Send(&pb.CoordinatorMessage{
+			Payload: &pb.CoordinatorMessage_JobComplete{
+				JobComplete: &pb.JobComplete{JobId: jobID},
+			},
+		})
+		ws.sendMu.Unlock()
+		return true
+	})
 }
 
 func collectUpstreamOutputs(stageOutputs map[string][]dag.TaskOutput, deps []string) []dag.TaskOutput {
@@ -820,4 +1004,97 @@ func mergeFinalOutputs(outputs []dag.TaskOutput) ([]byte, error) {
 		}
 	}
 	return json.MarshalIndent(merged, "", "  ")
+}
+
+func sanitize(id string) string {
+	out := make([]byte, len(id))
+	for i := 0; i < len(id); i++ {
+		c := id[i]
+		if c == '/' || c == '\\' || c == ':' {
+			c = '_'
+		}
+		out[i] = c
+	}
+	return string(out)
+}
+
+// handleAPIState builds a complete JSON snapshot of the cluster for the web UI
+func (c *Coordinator) handleAPIState(w http.ResponseWriter, r *http.Request) {
+	type WorkerSnapshot struct {
+		ID       string  `json:"id"`
+		CPU      float32 `json:"cpu"`
+		Active   int32   `json:"active"`
+		InFlight int32   `json:"in_flight"`
+		Draining bool    `json:"draining"`
+		Uptime   string  `json:"uptime"`
+	}
+
+	type JobSnapshot struct {
+		ID         string `json:"id"`
+		Total      int    `json:"total"`
+		Done       int    `json:"done"`
+		Percentage int    `json:"percentage"`
+	}
+
+	state := struct {
+		Metrics map[string]int64  `json:"metrics"`
+		Workers []WorkerSnapshot  `json:"workers"`
+		Jobs    []JobSnapshot     `json:"jobs"`
+		Logs    []string          `json:"logs"`
+		Results map[string]string `json:"results"`
+	}{
+		Metrics: map[string]int64{
+			"dispatched": telemetry.Global.TasksDispatched.Load(),
+			"completed":  telemetry.Global.TasksCompleted.Load(),
+			"failed":     telemetry.Global.TasksFailed.Load(),
+			"bytes":      telemetry.Global.BytesProcessed.Load(),
+		},
+		Results: make(map[string]string),
+	}
+
+	c.workers.Range(func(key, value interface{}) bool {
+		ws := value.(*workerState)
+		ws.mu.RLock()
+		cpu, _ := ws.cpuUsage.Load().(float32)
+		state.Workers = append(state.Workers, WorkerSnapshot{
+			ID:       ws.id,
+			CPU:      cpu,
+			Active:   ws.activeTasks.Load(),
+			InFlight: ws.inFlight.Load(),
+			Draining: ws.draining,
+			Uptime:   time.Since(ws.lastHeartbeat).Round(time.Second).String(),
+		})
+		ws.mu.RUnlock()
+		return true
+	})
+
+	c.jobs.Range(func(key, value interface{}) bool {
+		j := value.(*job)
+		done := j.doneTasks.Load()
+		pct := 0
+		if j.totalTasks > 0 {
+			pct = int((float64(done) / float64(j.totalTasks)) * 100)
+		}
+		state.Jobs = append(state.Jobs, JobSnapshot{
+			ID:         j.id,
+			Total:      j.totalTasks,
+			Done:       int(done),
+			Percentage: pct,
+		})
+		return true
+	})
+
+	// Add Logs
+	telemetry.LogMu.Lock()
+	state.Logs = append([]string{}, telemetry.LogRing...)
+	telemetry.LogMu.Unlock()
+
+	// Add Results
+	c.recentResults.Range(func(key, value interface{}) bool {
+		state.Results[key.(string)] = value.(string)
+		return true
+	})
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(state)
 }

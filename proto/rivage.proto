@@ -141,6 +141,10 @@ message CancelTask {
   string reason = 2;
 }
 
+message JobComplete {
+  string job_id = 1;
+}
+
 message CoordinatorMessage {
   oneof payload {
     TaskSpec task = 1;
@@ -148,6 +152,7 @@ message CoordinatorMessage {
     DrainCommand drain = 3;
     CancelTask cancel = 4;
     ChunkedTaskSpec chunked_task = 5;
+    JobComplete job_complete = 6;
   }
 }
 
