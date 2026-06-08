@@ -113,8 +113,8 @@ message ChunkedTaskSpec {
   bytes           data          = 14;
   bool            is_final      = 15;
   int64           total_size    = 16;
-  repeated string affinity_keys = 17; // NEW: Data Locality tags
-  string datastore_url = 16;
+  repeated string affinity_keys = 17;
+  string datastore_url = 18;
 }
 
 message TaskResult {

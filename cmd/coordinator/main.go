@@ -123,7 +123,7 @@ func main() {
 			matB := crmm.RandomMatrix(matrixSize)
 
 			start := time.Now()
-			resultMeta, err := crmm.CRMMJob(ctx, coord, matA, matB, tileSize, *datastoreFlag, jobID, *resumeFlag)
+			resultMeta, err := crmm.CRMMJob(ctx, coord, matA, matB, tileSize, *datastoreURL, jobID, *resumeFlag)
 			if err != nil {
 				log.Printf("[demo] CRMM job failed: %v", err)
 				return
@@ -141,7 +141,7 @@ func main() {
 			matB := matmul.RandomMatrix(matrixSize)
 
 			start := time.Now()
-			resultMeta, err := matmul.MatrixJob(ctx, coord, matA, matB, tileSize, *datastoreFlag, jobID, *resumeFlag)
+			resultMeta, err := matmul.MatrixJob(ctx, coord, matA, matB, tileSize, *datastoreURL, jobID, *resumeFlag)
 			if err != nil {
 				log.Printf("[demo] Matrix job failed: %v", err)
 				return
