@@ -78,3 +78,26 @@ This section may contain tables and figures of data that are necessary to show b
 **Over Lettering**
 * Front: Embossed in silver colour
 * Side: Embossed in silver colour
+
+
+3. PROPOSED METHODOLOGY
+
+3.1 Problem Statement (We just wrote this)
+3.2 System Architecture Overview * (High-level explanation of the decoupled Master-Worker model. You will include a large block diagram here showing nodes connected over a network).
+3.3 The Control Plane: Master Node Architecture
+
+    3.3.1 Directed Acyclic Graph (DAG) Execution Engine: (Explain how you convert user code into a topological graph. Include a diagram of a DAG).
+
+    3.3.2 Dynamic Task Scheduling: (Explain how the Master decides where to send tasks. Detail your specific algorithms here, such as Round Robin and Least Loaded).
+
+    3.3.3 State Management & Write-Ahead Logging (WAL): (Explain the exact logic of how you save state to disk before sending tasks. Include a state-machine diagram here).
+    3.4 The Compute Plane: Polyglot Worker Architecture
+
+    3.4.1 Native OS-Level Execution: (Explain how you use Go's os/exec to bypass JVMs and run Python/C++ scripts natively).
+
+    3.4.2 I/O Piping and Serialization: (Explain how you pass JSON and binary data into the standard input/output of the native scripts).
+    3.5 Network Communication Layer
+
+    3.5.1 gRPC and Protocol Buffers: (Show a snippet of your .proto file and explain the bi-directional streams).
+
+    3.5.2 Bounded-Memory Data Streaming: (Explain how you chunk large data into 4MB payloads to avoid OOM crashes. Include a sequence diagram of the data flow)

@@ -1,23 +1,153 @@
+Use canvas to outout the final text
+
+═══════════════════════════════════════
+ROLE & MISSION
+═══════════════════════════════════════
+
+You are an elite academic editor, ghostwriter, and linguistics expert with 20+ years of experience editing for top-tier peer-reviewed journals (Nature, The Lancet, JSTOR-indexed humanities journals, and discipline-specific outlets). You write with the assured, idiosyncratic voice of a senior tenured academic who has a point of view, reads widely, and has strong opinions about evidence.
+
+Your single task is to rewrite the text provided so that it reads as though it was composed entirely by that human expert — with all the natural imperfections, confident assertions, and stylistic distinctiveness that entails — while remaining absolutely rigorous, scholarly, and publication-ready.
+
+You are not a summariser. You are not a simplifier. You are a transformer of voice, not of substance.
+
+═══════════════════════════════════════
+CONTENT PRESERVATION — ABSOLUTE RULES
+═══════════════════════════════════════
+
+1. Do NOT remove, omit, compress, or summarise any argument, claim, example, statistic, citation, quotation, definition, or piece of evidence present in the original. Every substantive element must survive in the output.
+
+2. Do NOT reduce word count. The output must be equal to or longer than the input. If in doubt, expand — add analytical texture, a brief qualification, a nuanced elaboration — but never cut.
+
+3. Preserve all citations exactly: author names, years, page numbers, and in-text citation formats (APA, MLA, Chicago, Harvard, Vancouver — match whichever is used). Do not paraphrase, consolidate, or reorder citations.
+
+4. Preserve all section structure: if the original has headings, subheadings, or paragraph breaks, keep them in the same order. You may reword headings only if they become more precise — never vaguer.
+
+5. Preserve all data, numbers, percentages, measurements, dates, and named entities exactly as written. Never round, approximate, or restate figures in different units unless the original itself does so.
+
+6. Preserve the logical sequence of the argument. Do not reorder paragraphs or restructure the line of reasoning. The intellectual architecture of the original is sacrosanct.
+
+7. If the original contains direct quotations from other sources (indicated by quotation marks), reproduce them verbatim. Do not paraphrase quoted material.
+
+8. Do not alter the discipline-specific technical terminology unless it is incorrect. Replace only if a more precise, field-standard term exists; flag no changes — just make them.
+
+═══════════════════════════════════════
+ERROR CORRECTION — SILENT & COMPLETE
+═══════════════════════════════════════
+
+1. Correct all grammatical errors: subject-verb agreement, tense consistency, pronoun reference, dangling modifiers, misplaced clauses, comma splices, run-on sentences, and fragment sentences.
+
+2. Correct all spelling and typographical errors, including commonly confused words (affect/effect, principal/principle, compliment/complement, etc.).
+
+3. Correct all punctuation errors: missing or misplaced commas, semicolons used as commas, apostrophes in possessives vs. contractions, hyphenation of compound modifiers, and em-dash vs. en-dash usage.
+
+4. Fix article usage (a/an/the) errors, preposition errors, and non-idiomatic phrasing characteristic of non-native English academic writers — without erasing the author's voice or perspective.
+
+5. Fix parallelism failures in lists, comparative structures, and series constructions. Ensure consistency of capitalisation conventions for discipline-specific terms throughout the entire text.
+
+═══════════════════════════════════════
+HUMANISATION — VOICE & RHYTHM
+═══════════════════════════════════════
+
+1. Vary sentence length with intention. Short declarative sentences (8–12 words) must punctuate sections of dense argument. Long, subordinate-clause-heavy sentences (35–55 words) carry the analytical weight. Never produce three consecutive sentences of similar length or structure.
+
+2. Introduce deliberate "burstiness" — human writers accelerate into a point and then rest. Alternate between a burst of two or three rapid, short sentences and a longer, slower elaboration. AI text is uniformly paced; destroy that uniformity.
+
+3. Use "perplexity variation" — real academics use rare words, technical coinages, field-specific jargon, and occasional unexpected vocabulary choices. Intersperse high-register vocabulary with plainer phrasing. Never sustain a uniformly elevated register for more than three consecutive sentences.
+
+4. Vary paragraph openings aggressively. No two consecutive paragraphs may begin with the same grammatical structure. Acceptable openers: a prepositional phrase, a temporal marker, a concessive clause ("Despite this…"), a short declarative claim, a question, a reference to a cited author ("Smith's account of…").
+
+5. Introduce authorial voice markers sparingly but consistently: brief parenthetical asides ("— a distinction that is easily overlooked —"), mild epistemic hedges ("It remains unclear whether…"), and confident assertions ("This is not merely a semantic point."). These signal a mind at work, not a machine generating text.
+
+6. Occasionally allow a sentence to be slightly longer than "optimal" — real academic writers sometimes over-elaborate. This is a feature, not a bug. Do not aggressively optimise every sentence for brevity.
+
+7. Where the original argument permits, add a single brief, domain-credible elaboration per major section: an additional qualification, a recognition of a counterargument, or a note about methodological limits. Do not invent facts, citations, or data — only analytical nuance.
+
+8. Use active voice where it creates clarity and energy, but do not eliminate passive voice entirely — passive constructions are normal and expected in academic writing ("it has been argued," "the data were collected"). The goal is natural mixture, not active-voice maximalism.
+
+9. Vary how you introduce evidence and citations. Do not use the same citation framing twice in close proximity. Alternatives: "X argues that…", "According to X…", "As X has demonstrated…", "X's findings suggest…", "This is consistent with X's claim that…", "A contrasting position is advanced by X, who…".
+
+10. Ensure transitions between paragraphs feel earned, not mechanical. The link between two paragraphs should arise from the logic of the argument — a pivot, a concession, a deepening — not from a transitional formula stapled on at the start.
+
+═══════════════════════════════════════
+AI-PATTERN ELIMINATION — BANNED LIST
+═══════════════════════════════════════
+
+Never use any of the following words, phrases, or constructions — they are statistically associated with AI-generated text and will trigger detection:
+
+BANNED WORDS: "delve", "tapestry", "nuanced", "multifaceted", "pivotal", "crucial", "underscore", "leverage" (as a verb), "robust", "holistic", "paradigm shift", "game-changer", "landscape" (metaphorical), "realm", "foster", "harness", "streamline", "groundbreaking", "cutting-edge", "synergy", "at the end of the day", "in today's world", "in today's fast-paced", "it is important to note", "it is worth noting", "it cannot be overstated"
+
+BANNED TRANSITIONS: "Furthermore,", "Moreover,", "Additionally,", "In conclusion,", "To summarise,", "In summary,", "Firstly,", "Secondly,", "Thirdly,", "Lastly,", "In light of the above,", "Taking everything into consideration,"
+
+BANNED STRUCTURES: Three-part lists used as the backbone of a paragraph. Tricolon sentence endings ("X, Y, and Z" as a paragraph closer). Consecutive sentences beginning with "This" or "These". Any sentence of the form "It is [adjective] that [clause]" as an opener.
+
+BANNED PATTERNS: Uniform paragraph length (every paragraph must differ meaningfully in length). Uniform sentence rhythm within a paragraph. Starting more than two sentences per paragraph with the same word.
+
+═══════════════════════════════════════
+TONE, REGISTER & ACADEMIC CONVENTIONS
+═══════════════════════════════════════
+
+1. Maintain a formal, scholarly register throughout. This means: no contractions (don't → do not), no colloquialisms, no first-person plural "we" unless the original uses it, and no appeals to general or popular audiences.
+
+2. The tone must be authoritative but not arrogant, precise but not pedantic, and confident but not dismissive of complexity. Think: a distinguished professor in their late career who no longer needs to overstate things.
+
+3. Hedging must be calibrated to the discipline. Empirical sciences (STEM, medicine) hedge more; humanities and interpretive social sciences make bolder interpretive claims. Match the hedging density to the field of the original text.
+
+4. Do not moralise, editorialize beyond the scope of the original argument, or insert normative claims the original author did not make. The voice is that of the original author — more eloquent, not more opinionated.
+
+5. If the text is discipline-specific, honour the writing conventions of that field: scientific writing uses objective third-person and precise measurement language; legal writing uses defined terms and conditional constructions; humanities writing uses close reading and interpretive framing. Do not import the conventions of one field into another.
+
+═══════════════════════════════════════
+AI DETECTION & ORIGINALITY
+═══════════════════════════════════════
+
+The rewritten text must pass AI-detection tools — including GPTZero, Originality.ai, Turnitin's AI writing detection, Winston AI, and Copyleaks — not by introducing deliberate errors or inserting noise, but by achieving genuine stylistic variation that reflects authentic human authorship.
+
+Specifically achieve this by:
+— High burstiness: dramatic variation in sentence length within paragraphs (not just between them)
+— High perplexity: occasional unexpected word choices, idiomatic expressions, and field-specific collocations that LLMs would not spontaneously select
+— Asymmetric paragraph structure: paragraphs of visibly different shapes — some topic-sentence-forward, some ending with the key claim, some structured around a concession
+— Non-formulaic transitions: paragraph links that emerge from argument logic, not transitional templates
+— Occasional syntactic irregularity: a sentence that bends normal academic syntax slightly, in the way a real writer sometimes does mid-thought — a parenthetical, a delayed subject, an appositive that extends longer than expected
+
+Do NOT introduce spelling mistakes, grammatical errors, or deliberate incoherence as an evasion strategy. These degrade quality and are increasingly detected by modern tools.
+
+═══════════════════════════════════════
+OUTPUT FORMAT — STRICT
+═══════════════════════════════════════
+
+Return ONLY the rewritten text.
+
+- No preamble ("Here is the revised version…")
+- No postamble ("I have made the following changes…")
+- No annotations, inline comments, tracked changes, or footnotes about your edits
+- No summary of what was changed
+- Preserve all original headings, subheadings, footnotes, and reference lists exactly — edit them only to correct errors or improve precision
+- If the original ends with a references/bibliography section, reproduce it in full, with any formatting corrections applied
+
+Begin immediately with the first word of the rewritten text.
+
+═══════════════════════════════════════
+
 #import "@preview/diagraph:0.3.7": raw-render, render
 #import "@preview/fletcher:0.5.8" as fletcher: diagram, edge, node
 #import fletcher.shapes: cylinder
 // Global Setup and College Guidelines
 #set page(
-  paper: "a4",
-  margin: (left: 38mm, right: 25mm, top: 35mm, bottom: 35mm),
+  paper: "a4",
+  margin: (left: 38mm, right: 25mm, top: 35mm, bottom: 35mm),
 )
 
 #set text(
-  font: "Times New Roman",
-  size: 12pt,
-  top-edge: 0.9em,
+  font: "Times New Roman",
+  size: 12pt,
+  top-edge: 0.9em,
 )
 
 #show raw: set text(font: "VictorMono NF", size: 9pt)
 
 #set par(
-  leading: 0.9em,
-  justify: true,
+  leading: 0.9em,
+  justify: true,
 )
 
 // Heading Numbering Setup
@@ -25,80 +155,80 @@
 
 // Custom Level 1 Heading format to match the image
 #show heading.where(level: 1): it => (
-  pagebreak(weak: true)
-    + align(center)[
-      #v(1cm)
-      #text(size: 14pt, weight: "bold")[CHAPTER #counter(heading).display("1")]
-      #v(0.5cm)
-      #text(size: 14pt, weight: "bold")[#it.body]
-    ]
+  pagebreak(weak: true)
+    + align(center)[
+      #v(1cm)
+      #text(size: 14pt, weight: "bold")[CHAPTER #counter(heading).display("1")]
+      #v(0.5cm)
+      #text(size: 14pt, weight: "bold")[#it.body]
+    ]
 )
 
 // Custom Level 2 Heading format
 #show heading.where(level: 2): it => [
-  #v(0.5cm)
-  #text(size: 13pt, weight: "bold")[#it]
+  #v(0.5cm)
+  #text(size: 13pt, weight: "bold")[#it]
 ]
 
 // Front Matter Page Settings (Roman Numerals)
 #set page(
-  numbering: "I",
-  header: context [
-    #set text(size: 10pt)
-    #align(right)[
-      #text(weight: "regular")[RIVAGE: A POLYGLOT DISTRIBUTED COMPUTE ENGINE]
-      #h(2mm)
-      #box(width: 1pt, height: 0.9em, fill: black, baseline: 15%)
-      #h(2mm)
-      #strong[2026]
-    ]
-    #v(-2mm)
-    #line(length: 100%, stroke: 1.5pt + black)
-  ],
-  footer: context [
-    #set text(size: 10pt)
-    #line(length: 100%, stroke: 1.5pt + black)
-    #v(-1mm)
-    #grid(
-      columns: (auto, auto, 1fr),
-      align: (left, center, left),
-      column-gutter: 3mm,
-      [#counter(page).display("I")],
-      box(width: 1pt, height: 2.2em, fill: black, baseline: 15%),
-      [Department of Computer Science and Engineering, National Institute of \ Technology Srinagar],
-    )
-  ],
+  numbering: "I",
+  header: context [
+    #set text(size: 10pt)
+    #align(right)[
+      #text(weight: "regular")[RIVAGE: A POLYGLOT DISTRIBUTED COMPUTE ENGINE]
+      #h(2mm)
+      #box(width: 1pt, height: 0.9em, fill: black, baseline: 15%)
+      #h(2mm)
+      #strong[2026]
+    ]
+    #v(-2mm)
+    #line(length: 100%, stroke: 1.5pt + black)
+  ],
+  footer: context [
+    #set text(size: 10pt)
+    #line(length: 100%, stroke: 1.5pt + black)
+    #v(-1mm)
+    #grid(
+      columns: (auto, auto, 1fr),
+      align: (left, center, left),
+      column-gutter: 3mm,
+      [#counter(page).display("I")],
+      box(width: 1pt, height: 2.2em, fill: black, baseline: 15%),
+      [Department of Computer Science and Engineering, National Institute of \ Technology Srinagar],
+    )
+  ],
 )
 
 // Title Page
 #align(center)[
-  #v(1cm)
-  #text(size: 16pt, weight: "bold")[Rivage: A Polyglot Distributed Compute Engine for Numerical and Batch Processing] \
-  #v(1.5cm)
-  #text(size: 14pt)[A Report submitted] \
-  #text(size: 12pt)[in partial fulfillment of the requirement] \
-  #text(size: 12pt)[for the award of a Degree of] \
-  #v(0.5cm)
-  #text(size: 14pt, weight: "bold")[Bachelor of Technology] \
-  #v(0.5cm)
-  #text(size: 12pt)[in] \
-  #v(0.5cm)
-  #text(size: 14pt, weight: "bold")[Computer Science and Engineering] \
-  #v(1cm)
-  #text(size: 12pt)[by] \
-  #v(0.5cm)
-  #text(size: 14pt, weight: "bold")[Your Name] \
-  #text(size: 12pt)[(Your Roll Number)] \
-  #v(1.5cm)
-  #text(size: 12pt)[Under the guidance of] \
-  #v(0.5cm)
-  #text(size: 14pt, weight: "bold")[Guide Name] \
-  #v(2cm)
-  #text(size: 14pt, weight: "bold")[Department of Computer Science and Engineering] \
-  #text(size: 14pt, weight: "bold")[National Institute of Technology, Srinagar,] \
-  #text(size: 14pt, weight: "bold")[Kashmir 190006, INDIA] \
-  #v(1cm)
-  #text(size: 14pt, weight: "bold")[May 2026]
+  #v(1cm)
+  #text(size: 16pt, weight: "bold")[Rivage: A Polyglot Distributed Compute Engine for Numerical and Batch Processing] \
+  #v(1.5cm)
+  #text(size: 14pt)[A Report submitted] \
+  #text(size: 12pt)[in partial fulfillment of the requirement] \
+  #text(size: 12pt)[for the award of a Degree of] \
+  #v(0.5cm)
+  #text(size: 14pt, weight: "bold")[Bachelor of Technology] \
+  #v(0.5cm)
+  #text(size: 12pt)[in] \
+  #v(0.5cm)
+  #text(size: 14pt, weight: "bold")[Computer Science and Engineering] \
+  #v(1cm)
+  #text(size: 12pt)[by] \
+  #v(0.5cm)
+  #text(size: 14pt, weight: "bold")[Your Name] \
+  #text(size: 12pt)[(Your Roll Number)] \
+  #v(1.5cm)
+  #text(size: 12pt)[Under the guidance of] \
+  #v(0.5cm)
+  #text(size: 14pt, weight: "bold")[Guide Name] \
+  #v(2cm)
+  #text(size: 14pt, weight: "bold")[Department of Computer Science and Engineering] \
+  #text(size: 14pt, weight: "bold")[National Institute of Technology, Srinagar,] \
+  #text(size: 14pt, weight: "bold")[Kashmir 190006, INDIA] \
+  #v(1cm)
+  #text(size: 14pt, weight: "bold")[May 2026]
 ]
 
 // Front Matter
@@ -128,20 +258,20 @@
 
 // Main Content Page Settings (Arabic Numerals)
 #set page(
-  numbering: "1",
-  footer: context [
-    #set text(size: 10pt)
-    #line(length: 100%, stroke: 1.5pt + black)
-    #v(-1mm)
-    #grid(
-      columns: (auto, auto, 1fr),
-      align: (left, center, left),
-      column-gutter: 3mm,
-      [#counter(page).display("1")],
-      box(width: 1pt, height: 2.2em, fill: black, baseline: 15%),
-      [Department of Computer Science and Engineering, National Institute of \ Technology Srinagar],
-    )
-  ],
+  numbering: "1",
+  footer: context [
+    #set text(size: 10pt)
+    #line(length: 100%, stroke: 1.5pt + black)
+    #v(-1mm)
+    #grid(
+      columns: (auto, auto, 1fr),
+      align: (left, center, left),
+      column-gutter: 3mm,
+      [#counter(page).display("1")],
+      box(width: 1pt, height: 2.2em, fill: black, baseline: 15%),
+      [Department of Computer Science and Engineering, National Institute of \ Technology Srinagar],
+    )
+  ],
 )
 #counter(page).update(1)
 
@@ -256,82 +386,82 @@ This means a pure function neither depends upon, nor changes an external state. 
 The MapReduce model processes data fundamentally as a list of key-value pairs. We can formally define the execution pipeline by observing the domain and codomain of its three distinct phases: *Map, Shuffle, and Reduce*.
 
 1. *The Map Function:* The user-defined Map function takes a single input key-value pair and yields a list of intermediate key-value pairs. Mathematically, if $K$ represents the set of keys and $V$ represents the set of values, the Map signature is: \
-  $ bold("Map": (K_1 times V_1) -> "List"(K_2 times V_2)) $
-  Because the Map function is pure and only operates on a single $(K_1, V_1)$ pair at a time, the orchestrator can partition the input dataset into arbitrary chunks and apply the Map function concurrently across isolated worker nodes. This phase exhibits trivial $O(N)$ horizontal scalability.
+  $ bold("Map": (K_1 times V_1) -> "List"(K_2 times V_2)) $
+  Because the Map function is pure and only operates on a single $(K_1, V_1)$ pair at a time, the orchestrator can partition the input dataset into arbitrary chunks and apply the Map function concurrently across isolated worker nodes. This phase exhibits trivial $O(N)$ horizontal scalability.
 
 2. *The Shuffle and Group-by-key Barrier:* Once the Map phase concludes, the system encounters an implicit synchronization barrier. The raw intermediate pairs must be routed and aggregated so that all values sharing the same $K_2$ are grouped together. This system-level operation is modeled as:\
-  $ bold("Shuffle": "List"(K_2 times V_2) -> "List"(K_2 times "List"(V_2))) $
-  This phase is traditionally the most expensive operation in a distributed network, requiring all-to-all communication to properly route the keys to their designated reducers.
+  $ bold("Shuffle": "List"(K_2 times V_2) -> "List"(K_2 times "List"(V_2))) $
+  This phase is traditionally the most expensive operation in a distributed network, requiring all-to-all communication to properly route the keys to their designated reducers.
 
 3. *The Reduce Function:* Following the shuffle, the user-defined Reduce function is invoked. It takes a unique intermediate key $K_2$ and its associated list of values, performing an aggregation (or fold) to produce a final deterministic output:\
-  $ bold("Reduce": (K_2 times "List"(V_2)) -> "List"(V_3)) $
+  $ bold("Reduce": (K_2 times "List"(V_2)) -> "List"(V_3)) $
 By isolating the stateful aggregation strictly to the Reduce phase, the orchestrator ensures that
 
 === Theoretical Execution Flow
 @mapreduce-theory-diagram illustrates this functional transformation pipeline. By representing the computation mathematically, the orchestrator does not need to understand the underlying logic of the user's code; it only needs to fulfill the contract of the data signatures.
 
 #figure(
-  align(center)[
-    #rect(width: 100%, stroke: 1pt, inset: 0.5em, radius: 2pt)[
-      #align(center)[
-        #raw-render(
-          ```dot
-          digraph MR_Theory {
-            compound=true;
-            rankdir=TB;
-            nodesep=0.6;
-            ranksep=0.8;
+  align(center)[
+    #rect(width: 100%, stroke: 1pt, inset: 0.5em, radius: 2pt)[
+      #align(center)[
+        #raw-render(
+          ```dot
+          digraph MR_Theory {
+            compound=true;
+            rankdir=TB;
+            nodesep=0.6;
+            ranksep=0.8;
 
-            node [shape=box, fontname="Times New Roman", fontsize=10, penwidth=0.8, margin="0.25,0.15"];
-            edge [fontname="Times New Roman", fontsize=10, color="#181818", fontcolor="#181818", penwidth=0.8];
+            node [shape=box, fontname="Times New Roman", fontsize=10, penwidth=0.8, margin="0.25,0.15"];
+            edge [fontname="Times New Roman", fontsize=10, color="#181818", fontcolor="#181818", penwidth=0.8];
 
-            subgraph cluster_input {
-              label="1. Input Partitions\n(K1, V1)";
-              style=dashed; color="#888888"; fontname="Times New Roman"; fontsize=10;
-              I1 [label="Partition 1"];
-              I2 [label="Partition 2"];
-            }
+            subgraph cluster_input {
+              label="1. Input Partitions\n(K1, V1)";
+              style=dashed; color="#888888"; fontname="Times New Roman"; fontsize=10;
+              I1 [label="Partition 1"];
+              I2 [label="Partition 2"];
+            }
 
-            subgraph cluster_map {
-              label="2. Map Phase";
-              style=solid; color="#888888"; fontname="Times New Roman"; fontsize=10;
-              M1 [label="Map(k1, v1)"];
-              M2 [label="Map(k1, v1)"];
-            }
+            subgraph cluster_map {
+              label="2. Map Phase";
+              style=solid; color="#888888"; fontname="Times New Roman"; fontsize=10;
+              M1 [label="Map(k1, v1)"];
+              M2 [label="Map(k1, v1)"];
+            }
 
-            subgraph cluster_shuffle {
-              label="3. Shuffle & Sort";
-              style=solid; color="#888888"; fontname="Times New Roman"; fontsize=10;
-              S1 [label="GroupByKey(K2)"];
-            }
+            subgraph cluster_shuffle {
+              label="3. Shuffle & Sort";
+              style=solid; color="#888888"; fontname="Times New Roman"; fontsize=10;
+              S1 [label="GroupByKey(K2)"];
+            }
 
-            subgraph cluster_reduce {
-              label="4. Reduce Phase\nFold / Aggregate";
-              style=solid; color="#888888"; fontname="Times New Roman"; fontsize=10;
-              R1 [label="Reduce(k2, list(v2))"];
-            }
+            subgraph cluster_reduce {
+              label="4. Reduce Phase\nFold / Aggregate";
+              style=solid; color="#888888"; fontname="Times New Roman"; fontsize=10;
+              R1 [label="Reduce(k2, list(v2))"];
+            }
 
-            subgraph cluster_output {
-              label="5. Final Output\nList(V3)";
-              style=dashed; color="#888888"; fontname="Times New Roman"; fontsize=10;
-              O1 [label="Result Set"];
-            }
+            subgraph cluster_output {
+              label="5. Final Output\nList(V3)";
+              style=dashed; color="#888888"; fontname="Times New Roman"; fontsize=10;
+              O1 [label="Result Set"];
+            }
 
-            I1 -> M1 [lhead=cluster_map];
-            I2 -> M2 [lhead=cluster_map];
+            I1 -> M1 [lhead=cluster_map];
+            I2 -> M2 [lhead=cluster_map];
 
-            M1 -> S1 [lhead=cluster_shuffle, label="  List(k2, v2)  "];
-            M2 -> S1 [lhead=cluster_shuffle, label="  List(k2, v2)  "];
+            M1 -> S1 [lhead=cluster_shuffle, label="  List(k2, v2)  "];
+            M2 -> S1 [lhead=cluster_shuffle, label="  List(k2, v2)  "];
 
-            S1 -> R1 [lhead=cluster_reduce, label="  (k2, list(v2))  "];
-            R1 -> O1 [lhead=cluster_output];
-          }
-          ```,
-        )
-      ]
-    ]
-  ],
-  caption: [Theoretical data flow and functional boundaries of the MapReduce paradigm],
+            S1 -> R1 [lhead=cluster_reduce, label="  (k2, list(v2))  "];
+            R1 -> O1 [lhead=cluster_output];
+          }
+          ```,
+        )
+      ]
+    ]
+  ],
+  caption: [Theoretical data flow and functional boundaries of the MapReduce paradigm],
 ) <mapreduce-theory-diagram>
 
 === Applied Example: Distributed Word Frequency Analysis
@@ -341,24 +471,24 @@ To contextualize the mathematical formulations established above, it is useful t
 Assume the Central Store holds a dataset that the orchestrator partitions and feeds into two separate Worker nodes. The data transforms through the pure functional boundaries as follows:
 
 1. *Input Partitioning:* The raw input dataset is divided into two bounded chunks and piped to the workers: \
-  #set list(marker: [--])
-  - Partition A: `"hello world hello"`
-  - Partition B: `"hello distributed compute"`
+  #set list(marker: [--])
+  - Partition A: `"hello world hello"`
+  - Partition B: `"hello distributed compute"`
 
 2. *The Map Phase:* The user-defined Map script reads the input stream. For every word encountered, it emits an intermediate key-value pair where the word is the key and the integer $1$ is the value. Because this is a pure function, Node 1 and Node 2 process their chunks in complete isolation without locking a shared database.\
-  #set list(marker: [--])
-  - Node 1 (Processing Partition A) emits:\
-    $mono("(\"hello\", 1), (\"world\", 1), (\"hello\", 1)")$
-  - Node 2 (Processing Partition B) emits:\
-    $mono("(\"hello\", 1), (\"distributed\", 1), (\"compute\", 1)")$
+  #set list(marker: [--])
+  - Node 1 (Processing Partition A) emits:\
+    $mono("(\"hello\", 1), (\"world\", 1), (\"hello\", 1)")$
+  - Node 2 (Processing Partition B) emits:\
+    $mono("(\"hello\", 1), (\"distributed\", 1), (\"compute\", 1)")$
 
 3. *The Shuffle and Group Barrier:* The system intercepts the raw emitted pairs and performs the all-to-all network routing barrier. It groups all identical keys together into lists, ensuring that all occurrences of a specific word are sent to the same Reducer.\
-  *Grouped Output:*
-  #set list(marker: [--])
-  - $mono("\"hello\"") -> mono("[1, 1, 1]")$
-  - $mono("\"world\"") -> mono("[1]")$
-  - $mono("\"distributed\"") -> mono("[1]")$
-  - $mono("\"compute\"") -> mono("[1]")$
+  *Grouped Output:*
+  #set list(marker: [--])
+  - $mono("\"hello\"") -> mono("[1, 1, 1]")$
+  - $mono("\"world\"") -> mono("[1]")$
+  - $mono("\"distributed\"") -> mono("[1]")$
+  - $mono("\"compute\"") -> mono("[1]")$
 
 4. *The Reduce Phase:*
 The user-defined Reduce script receives the grouped keys and their associated lists of integers. It applies a simple aggregation function (a sum fold) to compute the final deterministic totals.\
@@ -369,80 +499,80 @@ The user-defined Reduce script receives the grouped keys and their associated li
 - $mono("Reduce(\"compute\", [1])") -> mono("(\"compute\", 1)")$
 
 #figure(
-  align(center)[
-    #set text(size: 9.5pt)
-    #rect(width: 100%, stroke: 1pt, inset: 1em, radius: 3pt)[
-      #diagram(
-        spacing: (1.6em, 2.5em),
-        node-stroke: 0.8pt,
-        edge-stroke: 0.8pt,
-        node-fill: white,
-        node-corner-radius: 3pt,
-        mark-scale: 90%,
-        node-defocus: -0.2,
+  align(center)[
+    #set text(size: 9.5pt)
+    #rect(width: 100%, stroke: 1pt, inset: 1em, radius: 3pt)[
+      #diagram(
+        spacing: (1.6em, 2.5em),
+        node-stroke: 0.8pt,
+        edge-stroke: 0.8pt,
+        node-fill: white,
+        node-corner-radius: 3pt,
+        mark-scale: 90%,
+        node-defocus: -0.2,
 
-        /* Phase 1: Input */
-        node((1.5, 0), [*1. Input Partitions*], stroke: none, fill: none),
-        node((0.5, 1), align(center)[`"hello world"` \ `"hello"`], name: <I1>, shape: rect, inset: 0.7em),
-        node((2.5, 1), align(center)[`"hello"` \ `"distributed"` \ `"compute"`], name: <I2>, shape: rect, inset: 0.7em),
-        node(enclose: (<I1>, <I2>), stroke: 0.8pt, inset: 2em, fill: none, snap: -1),
+        /* Phase 1: Input */
+        node((1.5, 0), [*1. Input Partitions*], stroke: none, fill: none),
+        node((0.5, 1), align(center)[`"hello world"` \ `"hello"`], name: <I1>, shape: rect, inset: 0.7em),
+        node((2.5, 1), align(center)[`"hello"` \ `"distributed"` \ `"compute"`], name: <I2>, shape: rect, inset: 0.7em),
+        node(enclose: (<I1>, <I2>), stroke: 0.8pt, inset: 2em, fill: none, snap: -1),
 
-        /* Phase 2: Map */
-        node((1.5, 3), [*2. Map Phase*], stroke: none, fill: none),
-        node(
-          (0.5, 4),
-          align(center)[`("hello", 1)` \ `("world", 1)` \ `("hello", 1)`],
-          name: <M1>,
-          shape: rect,
-          inset: 0.7em,
-        ),
-        node(
-          (2.5, 4),
-          align(center)[`("hello", 1)` \ `("distributed", 1)` \ `("compute", 1)`],
-          name: <M2>,
-          shape: rect,
-          inset: 0.7em,
-        ),
-        node(enclose: (<M1>, <M2>), stroke: 0.8pt, inset: 2em, fill: none, snap: -1),
+        /* Phase 2: Map */
+        node((1.5, 3), [*2. Map Phase*], stroke: none, fill: none),
+        node(
+          (0.5, 4),
+          align(center)[`("hello", 1)` \ `("world", 1)` \ `("hello", 1)`],
+          name: <M1>,
+          shape: rect,
+          inset: 0.7em,
+        ),
+        node(
+          (2.5, 4),
+          align(center)[`("hello", 1)` \ `("distributed", 1)` \ `("compute", 1)`],
+          name: <M2>,
+          shape: rect,
+          inset: 0.7em,
+        ),
+        node(enclose: (<M1>, <M2>), stroke: 0.8pt, inset: 2em, fill: none, snap: -1),
 
-        /* Phase 3: Shuffle */
-        node((1.5, 5.5), [*3. Shuffle & Group*], stroke: none, fill: white),
-        node((0, 7), align(center)[`"world"` \ `[1]`], name: <S1>, shape: rect, outset: 2pt, inset: 0.7em),
-        node((1, 7), align(center)[`"hello"` \ `[1, 1, 1]`], name: <S2>, shape: rect, outset: 2pt, inset: 0.7em),
-        node((2, 7), align(center)[`"distributed"` \ `[1]`], name: <S3>, shape: rect, outset: 2pt, inset: 0.7em),
-        node((3, 7), align(center)[`"compute"` \ `[1]`], name: <S4>, shape: rect, outset: 2pt, inset: 0.7em),
-        node(enclose: (<S1>, <S2>, <S3>, <S4>), stroke: 0.8pt, inset: 2em, fill: none, snap: -1),
+        /* Phase 3: Shuffle */
+        node((1.5, 5.5), [*3. Shuffle & Group*], stroke: none, fill: white),
+        node((0, 7), align(center)[`"world"` \ `[1]`], name: <S1>, shape: rect, outset: 2pt, inset: 0.7em),
+        node((1, 7), align(center)[`"hello"` \ `[1, 1, 1]`], name: <S2>, shape: rect, outset: 2pt, inset: 0.7em),
+        node((2, 7), align(center)[`"distributed"` \ `[1]`], name: <S3>, shape: rect, outset: 2pt, inset: 0.7em),
+        node((3, 7), align(center)[`"compute"` \ `[1]`], name: <S4>, shape: rect, outset: 2pt, inset: 0.7em),
+        node(enclose: (<S1>, <S2>, <S3>, <S4>), stroke: 0.8pt, inset: 2em, fill: none, snap: -1),
 
-        /* Phase 4: Reduce */
-        node((1.5, 10), [*4. Reduce Phase Output*], stroke: none, fill: white),
-        node((0, 11), align(center)[`("world", 1)`], name: <R1>, shape: rect, inset: 0.7em),
-        node((1, 11), align(center)[`("hello", 3)`], name: <R2>, shape: rect, inset: 0.7em),
-        node((2, 11), align(center)[`("distributed", 1)`], name: <R3>, shape: rect, inset: 0.7em),
-        node((3, 11), align(center)[`("compute", 1)`], name: <R4>, shape: rect, inset: 0.7em),
-        node(enclose: (<R1>, <R2>, <R3>, <R4>), stroke: (dash: "dashed"), inset: 1.5em, fill: none, snap: -1),
+        /* Phase 4: Reduce */
+        node((1.5, 10), [*4. Reduce Phase Output*], stroke: none, fill: white),
+        node((0, 11), align(center)[`("world", 1)`], name: <R1>, shape: rect, inset: 0.7em),
+        node((1, 11), align(center)[`("hello", 3)`], name: <R2>, shape: rect, inset: 0.7em),
+        node((2, 11), align(center)[`("distributed", 1)`], name: <R3>, shape: rect, inset: 0.7em),
+        node((3, 11), align(center)[`("compute", 1)`], name: <R4>, shape: rect, inset: 0.7em),
+        node(enclose: (<R1>, <R2>, <R3>, <R4>), stroke: (dash: "dashed"), inset: 1.5em, fill: none, snap: -1),
 
-        /* Edges */
-        /* Removed .south and .north constraints so the defocus engine can spread them */
-        edge(<I1>, <M1>, "->", label: [Map], label-side: left),
-        edge(<I2>, <M2>, "->", label: [Map], label-side: right),
+        /* Edges */
+        /* Removed .south and .north constraints so the defocus engine can spread them */
+        edge(<I1>, <M1>, "->", label: [Map], label-side: left),
+        edge(<I2>, <M2>, "->", label: [Map], label-side: right),
 
-        edge(<M1>, <S1>, "->", crossing: true),
-        edge(<M1>, <S2>, "->", crossing: true),
-        edge(<M2>, <S2>, "->", crossing: true),
-        edge(<M2>, <S3>, "->", crossing: true),
-        edge(<M2>, <S4>, "->", crossing: true),
+        edge(<M1>, <S1>, "->", crossing: true),
+        edge(<M1>, <S2>, "->", crossing: true),
+        edge(<M2>, <S2>, "->", crossing: true),
+        edge(<M2>, <S3>, "->", crossing: true),
+        edge(<M2>, <S4>, "->", crossing: true),
 
-        edge(<S1>, <R1>, "->", label: [Fold], label-side: left),
-        edge(<S2>, <R2>, "->", label: [Fold], label-side: left),
-        edge(<S3>, <R3>, "->", label: [Fold], label-side: right),
-        edge(<S4>, <R4>, "->", label: [Fold], label-side: right),
-      )
-    ]
-  ],
-  caption: [
-    Execution trace of a distributed Word Count workload.
-    Network shuffle intersections are rendered cleanly using crossing halos.
-  ],
+        edge(<S1>, <R1>, "->", label: [Fold], label-side: left),
+        edge(<S2>, <R2>, "->", label: [Fold], label-side: left),
+        edge(<S3>, <R3>, "->", label: [Fold], label-side: right),
+        edge(<S4>, <R4>, "->", label: [Fold], label-side: right),
+      )
+    ]
+  ],
+  caption: [
+    Execution trace of a distributed Word Count workload.
+    Network shuffle intersections are rendered cleanly using crossing halos.
+  ],
 ) <word-count-diagram>
 \
 
@@ -463,34 +593,34 @@ The term "acyclic" dictates that the graph must contain no directed cycles; it i
 To execute a DAG on computational hardware, the graph must be mathematically flattened into a one-dimensional, linear sequence that respects all defined dependencies. This is achieved through an algorithmic process known as Topological Sorting.
 
 #figure(
-  align(center)[
-    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
-      #align(left)[
-        *Input:* A Directed Acyclic Graph $G = (V, E)$ \
-        *Output:* A linear list $L$ containing the topologically sorted vertices \
-        #line(length: 100%, stroke: 0.5pt)
-        #v(0.2em)
-        1: $bold(L) <-$ Empty list that will contain the sorted elements \
-        2: $bold("InDegree") <-$ Array storing the number of incoming edges for each $v in V$ \
-        3: $bold(Q) <-$ Queue containing all nodes where $"InDegree"[v] == 0$ \
-        4: \
-        5: *while* $Q$ is not empty *do* \
-        6: $quad$ $u <-$ Dequeue a node from $Q$ \
-        7: $quad$ Append $u$ to $L$ \
-        8: $quad$ \
-        9: $quad$ *for each* node $v$ with a directed edge from $u$ to $v$ *do* \
-        10: $quad$ $quad$ $"InDegree"[v] <- "InDegree"[v] - 1$ $quad$ \/\/ Relax the edge \
-        11: $quad$ $quad$ *if* $"InDegree"[v] == 0$ *then* \
-        12: $quad$ $quad$ $quad$ Enqueue $v$ into $Q$ \
-        13: \
-        14: *if* length of $L != |V|$ *then* \
-        15: $quad$ *return* Error (Graph contains at least one cycle) \
-        16: *else* \
-        17: $quad$ *return* $L$
-      ]
-    ]
-  ],
-  caption: [Pseudocode representation of topological graph resolution via Kahn's Algorithm],
+  align(center)[
+    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
+      #align(left)[
+        *Input:* A Directed Acyclic Graph $G = (V, E)$ \
+        *Output:* A linear list $L$ containing the topologically sorted vertices \
+        #line(length: 100%, stroke: 0.5pt)
+        #v(0.2em)
+        1: $bold(L) <-$ Empty list that will contain the sorted elements \
+        2: $bold("InDegree") <-$ Array storing the number of incoming edges for each $v in V$ \
+        3: $bold(Q) <-$ Queue containing all nodes where $"InDegree"[v] == 0$ \
+        4: \
+        5: *while* $Q$ is not empty *do* \
+        6: $quad$ $u <-$ Dequeue a node from $Q$ \
+        7: $quad$ Append $u$ to $L$ \
+        8: $quad$ \
+        9: $quad$ *for each* node $v$ with a directed edge from $u$ to $v$ *do* \
+        10: $quad$ $quad$ $"InDegree"[v] <- "InDegree"[v] - 1$ $quad$ \/\/ Relax the edge \
+        11: $quad$ $quad$ *if* $"InDegree"[v] == 0$ *then* \
+        12: $quad$ $quad$ $quad$ Enqueue $v$ into $Q$ \
+        13: \
+        14: *if* length of $L != |V|$ *then* \
+        15: $quad$ *return* Error (Graph contains at least one cycle) \
+        16: *else* \
+        17: $quad$ *return* $L$
+      ]
+    ]
+  ],
+  caption: [Pseudocode representation of topological graph resolution via Kahn's Algorithm],
 ) <kahn-algo>
 
 A topological sort of a DAG is a linear ordering of its vertices such that for every directed edge $(u, v)$ from vertex $u$ to vertex $v$, $u$ comes before $v$ in the ordering. This mathematical operation guarantees that no computational stage is scheduled before its prerequisite data has been fully computed. When applied to distributed systems, topological sorting allows independent vertices to be grouped into parallel execution phases, naturally isolated by execution barriers. This ensures that all intermediate data is completely settled and immutable before subsequent dependent operations begin.
@@ -507,128 +637,128 @@ Modern network architectures resolve this by utilizing protocols operating exclu
 To satisfy the operation requirements laid out in problem statement and requirements sections, the porposed system adopts a Master-Slave architecture developed in Golang. This design separates the control pane, responsible for global state & schedluing/re-scheduling from wokers which are solely responsible for running tasks.
 
 #figure(
-  align(center)[
-    #set text(font: "Times New Roman", size: 9pt)
-    #rect(width: 100%, stroke: 0.8pt, inset: 2em, radius: 2pt)[
-      #diagram(
-        spacing: (1em, 5em), // Tighter horizontal spacing, balanced vertical
-        node-stroke: 0.8pt,
-        edge-stroke: 0.8pt,
-        node-inset: 3pt,
-        node-outset: 1.5pt,
-        node-corner-radius: 2pt,
-        mark-scale: 80%,
+  align(center)[
+    #set text(font: "Times New Roman", size: 9pt)
+    #rect(width: 100%, stroke: 0.8pt, inset: 2em, radius: 2pt)[
+      #diagram(
+        spacing: (1em, 5em), // Tighter horizontal spacing, balanced vertical
+        node-stroke: 0.8pt,
+        edge-stroke: 0.8pt,
+        node-inset: 3pt,
+        node-outset: 1.5pt,
+        node-corner-radius: 2pt,
+        mark-scale: 80%,
 
-        /* ==========================================
-        1. CLIENT
-        ========================================== */
-        node((1, 0), [*Client API* \ (Job Submission)], name: <client>, shape: rect),
+        /* ==========================================
+        1. CLIENT
+        ========================================== */
+        node((1, 0), [*Client API* \ (Job Submission)], name: <client>, shape: rect),
 
-        /* ==========================================
-        2. MASTER PLANE (Control Plane)
-        ========================================== */
-        // Center Spine
-        node((1, 1), [*Coordinator*], name: <coord>, shape: rect),
-        node((1, 2.5), [*Scheduler* \ (Least-Loaded)], name: <sched>, shape: rect),
-        node((1, 4), [*gRPC Server* \ (Multiplexer)], name: <grpc>, shape: rect),
+        /* ==========================================
+        2. MASTER PLANE (Control Plane)
+        ========================================== */
+        // Center Spine
+        node((1, 1), [*Coordinator*], name: <coord>, shape: rect),
+        node((1, 2.5), [*Scheduler* \ (Least-Loaded)], name: <sched>, shape: rect),
+        node((1, 4), [*gRPC Server* \ (Multiplexer)], name: <grpc>, shape: rect),
 
-        // Data Stores (Left side of the Master Box)
-        node((3, 1), align(center)[*WAL* \ (State Log)], name: <wal>, shape: cylinder),
-        node((3, 2.5), align(center)[*Data Store* \ (Local Disk  )], name: <store>, shape: cylinder),
+        // Data Stores (Left side of the Master Box)
+        node((3, 1), align(center)[*WAL* \ (State Log)], name: <wal>, shape: cylinder),
+        node((3, 2.5), align(center)[*Data Store* \ (Local Disk  )], name: <store>, shape: cylinder),
 
-        // WIDER Master Bounding Box (Spans X: 0.3 to 3.7)
-        // node((0.3, 0.8), stroke: none, name: <m_tl>),
-        // node((3.7, 4.2), stroke: none, name: <m_br>),
-        // node(
-        //   enclose: (<m_tl>, <m_br>),
-        //   stroke: (dash: "dashed", paint: gray, thickness: 1pt),
-        //   fill: rgb("FAFAFA"), name: <box_master>
-        // ),
+        // WIDER Master Bounding Box (Spans X: 0.3 to 3.7)
+        // node((0.3, 0.8), stroke: none, name: <m_tl>),
+        // node((3.7, 4.2), stroke: none, name: <m_br>),
+        // node(
+        //   enclose: (<m_tl>, <m_br>),
+        //   stroke: (dash: "dashed", paint: gray, thickness: 1pt),
+        //   fill: rgb("FAFAFA"), name: <box_master>
+        // ),
 
-        // Centered Master Label
-        node((2, 0.5), rect(stroke: none)[*Control Plane (Coordinator)*], stroke: none),
+        // Centered Master Label
+        node((2, 0.5), rect(stroke: none)[*Control Plane (Coordinator)*], stroke: none),
 
-        /* ==========================================
-        3. WORKER PLANE (Compute Plane)
-        ========================================== */
-        // Worker 1 (Left Stack at X=1)
-        node((1.5, 5.5), [*Worker Daemon 1*], name: <wd1>, shape: rect),
-        node((1.5, 7), [Subprocess \ `(os/exec)`], name: <sp1>, shape: rect),
-        node((1.5, 8), [User Script], name: <ws1>, shape: rect, stroke: (dash: "dashed")),
+        /* ==========================================
+        3. WORKER PLANE (Compute Plane)
+        ========================================== */
+        // Worker 1 (Left Stack at X=1)
+        node((1.5, 5.5), [*Worker Daemon 1*], name: <wd1>, shape: rect),
+        node((1.5, 7), [Subprocess \ `(os/exec)`], name: <sp1>, shape: rect),
+        node((1.5, 8), [User Script], name: <ws1>, shape: rect, stroke: (dash: "dashed")),
 
-        // Worker 2 (Right Stack at X=3)
-        node((2.5, 5.5), [*Worker Daemon 2*], name: <wd2>, shape: rect),
-        node((2.5, 7), [Subprocess \ `(os/exec)`], name: <sp2>, shape: rect),
-        node((2.5, 8), [User Script], name: <ws2>, shape: rect, stroke: (dash: "dashed")),
+        // Worker 2 (Right Stack at X=3)
+        node((2.5, 5.5), [*Worker Daemon 2*], name: <wd2>, shape: rect),
+        node((2.5, 7), [Subprocess \ `(os/exec)`], name: <sp2>, shape: rect),
+        node((2.5, 8), [User Script], name: <ws2>, shape: rect, stroke: (dash: "dashed")),
 
-        // Worker Bounding Box (Matches Master Box Width perfectly: X: 0.3 to 3.7)
-        // node((0.3, 4.8), stroke: none, name: <w_tl>),
-        // node((3.7, 8.8), stroke: none, name: <w_br>),
-        // node(
-        //   enclose: (<w_tl>, <w_br>),
-        //   stroke: (dash: "dashed", paint: gray, thickness: 1pt),
-        //   fill: rgb("FAFAFA"), name: <box_worker>
-        // ),
+        // Worker Bounding Box (Matches Master Box Width perfectly: X: 0.3 to 3.7)
+        // node((0.3, 4.8), stroke: none, name: <w_tl>),
+        // node((3.7, 8.8), stroke: none, name: <w_br>),
+        // node(
+        //   enclose: (<w_tl>, <w_br>),
+        //   stroke: (dash: "dashed", paint: gray, thickness: 1pt),
+        //   fill: rgb("FAFAFA"), name: <box_worker>
+        // ),
 
-        // Centered Worker Label
-        node((0.5, 7), rect(fill: white, stroke: none)[*Compute Plane (Workers)*], stroke: none),
+        // Centered Worker Label
+        node((0.5, 7), rect(fill: white, stroke: none)[*Compute Plane (Workers)*], stroke: none),
 
-        /* ==========================================
-        4. INTERNAL LOGIC EDGES
-        ========================================== */
-        edge(
-          <client>,
-          <coord>,
-          "->",
-          label: rect(fill: white, stroke: none, inset: 2pt)[Pipeline Config],
-          label-side: center,
-        ),
-        edge(<coord>, <sched>, "->", label: rect(stroke: none, inset: 2pt)[Task Specs], label-side: center),
-        edge(<sched>, <grpc>, "->", label: rect(stroke: none, inset: 2pt)[Dispatch], label-side: center),
+        /* ==========================================
+        4. INTERNAL LOGIC EDGES
+        ========================================== */
+        edge(
+          <client>,
+          <coord>,
+          "->",
+          label: rect(fill: white, stroke: none, inset: 2pt)[Pipeline Config],
+          label-side: center,
+        ),
+        edge(<coord>, <sched>, "->", label: rect(stroke: none, inset: 2pt)[Task Specs], label-side: center),
+        edge(<sched>, <grpc>, "->", label: rect(stroke: none, inset: 2pt)[Dispatch], label-side: center),
 
-        edge(<coord>, <wal>, "->", label: rect(stroke: none, inset: 2pt)[`Log()`], label-side: center),
-        edge(<sched>, <store>, "->", label: rect(stroke: none, inset: 2pt)[`Write() / Read()`], label-side: center),
+        edge(<coord>, <wal>, "->", label: rect(stroke: none, inset: 2pt)[`Log()`], label-side: center),
+        edge(<sched>, <store>, "->", label: rect(stroke: none, inset: 2pt)[`Write() / Read()`], label-side: center),
 
-        edge(<wd1>, <sp1>, "->", label: rect(stroke: none, inset: 2pt)[Chunk Assembled], label-side: center),
-        edge(<wd2>, <sp2>, "->"),
-        edge(<sp1>, <ws1>, "<->", stroke: 1.5pt, label: rect(stroke: none, inset: 2pt)[`pipes`], label-side: center),
-        edge(<sp2>, <ws2>, "<->", stroke: 1.5pt),
-        edge(<wd1>, <wd2>, "|..|"),
+        edge(<wd1>, <sp1>, "->", label: rect(stroke: none, inset: 2pt)[Chunk Assembled], label-side: center),
+        edge(<wd2>, <sp2>, "->"),
+        edge(<sp1>, <ws1>, "<->", stroke: 1.5pt, label: rect(stroke: none, inset: 2pt)[`pipes`], label-side: center),
+        edge(<sp2>, <ws2>, "<->", stroke: 1.5pt),
+        edge(<wd1>, <wd2>, "|..|"),
 
-        /* ==========================================
-        5. CROSS-PLANE ORTHOGONAL ROUTING
-        ========================================== */
-        // Downward Dispatch Streams
-        // Routes safely in the vertical gap between the bounding boxes (Y = 4.5)
-        edge(
-          <grpc.south>,
-          (1, 5),
-          (1.5, 5),
-          <wd1.north>,
-          "->",
-          label: rect(fill: white, height: auto, stroke: none, inset: 0pt)[ChunkedTask Stream],
-          label-pos: 0.4,
-        ),
-        edge(<grpc.south>, (1, 4.5), (2.5, 4.5), <wd2.north>, "->"),
+        /* ==========================================
+        5. CROSS-PLANE ORTHOGONAL ROUTING
+        ========================================== */
+        // Downward Dispatch Streams
+        // Routes safely in the vertical gap between the bounding boxes (Y = 4.5)
+        edge(
+          <grpc.south>,
+          (1, 5),
+          (1.5, 5),
+          <wd1.north>,
+          "->",
+          label: rect(fill: white, height: auto, stroke: none, inset: 0pt)[ChunkedTask Stream],
+          label-pos: 0.4,
+        ),
+        edge(<grpc.south>, (1, 4.5), (2.5, 4.5), <wd2.north>, "->"),
 
-        // Upward Return Streams
-        // Left return routes perfectly down the empty X=0 column, entirely outside the box
-        edge(
-          <wd1.west>,
-          (0, 5.5),
-          (0, 4),
-          <grpc.west>,
-          "->",
-          label: rect(fill: white, stroke: none, inset: 2pt)[Stream Chunked Result],
-          label-side: center,
-        ),
+        // Upward Return Streams
+        // Left return routes perfectly down the empty X=0 column, entirely outside the box
+        edge(
+          <wd1.west>,
+          (0, 5.5),
+          (0, 4),
+          <grpc.west>,
+          "->",
+          label: rect(fill: white, stroke: none, inset: 2pt)[Stream Chunked Result],
+          label-side: center,
+        ),
 
-        // Right return routes perfectly down the empty X=4 column, entirely outside the box
-        edge(<wd2.east>, (3.5, 5.5), (3.5, 4), <grpc.east>, "->"),
-      )
-    ]
-  ],
-  caption: [Vertical topology of the Rivage Engine. Both the orchestration layer and the worker subprocess pipelines flow perfectly top-to-bottom.],
+        // Right return routes perfectly down the empty X=4 column, entirely outside the box
+        edge(<wd2.east>, (3.5, 5.5), (3.5, 4), <grpc.east>, "->"),
+      )
+    ]
+  ],
+  caption: [Vertical topology of the Rivage Engine. Both the orchestration layer and the worker subprocess pipelines flow perfectly top-to-bottom.],
 ) <arch-diagram>
 
 The architecture outlined in @arch-diagram is not merely a structural topology, but a strict sequence of data transformations. To detail the system design, it is best to track the execution lifecycle of a dataset as it moves through the distinct physical boundaries of the network. The orchestrator must handle ingestion, static topology resolution, bounded data streaming, etc.
@@ -701,51 +831,51 @@ Managing thousands of concurrent network streams demands strict memory partition
 The root struct maintains the immutable configuration boundaries, network interfaces, and the global thread-safe registries. By mapping identifiers directly to memory pointers within a concurrent map, asynchronous goroutines can fetch a specific worker's state or a job's status in $O(1)$ time complexity.
 
 #align(center)[
-  #rect(width: 85%, stroke: 0.8pt, inset: 1em, radius: 2pt)[
-    #align(left)[
-      ```
-      struct Coordinator {
-          // Interfaces
-          cfg      : CoordinatorConfig
-          sched    : SchedulerInterface
-          grpc_srv : ProtocolServer
-          log      : TelemetryLogger
+  #rect(width: 85%, stroke: 0.8pt, inset: 1em, radius: 2pt)[
+    #align(left)[
+      ```
+      struct Coordinator {
+          // Interfaces
+          cfg      : CoordinatorConfig
+          sched    : SchedulerInterface
+          grpc_srv : ProtocolServer
+          log      : TelemetryLogger
 
-          // Global Registries
-          workers  : ConcurrentMap [WorkerID -> worker_state]
-          jobs     : ConcurrentMap [JobID -> job_state]
-          results  : ConcurrentMap [JobID -> OutputCache]
-      }
-      ```
-    ]
-  ]
+          // Global Registries
+          workers  : ConcurrentMap [WorkerID -> worker_state]
+          jobs     : ConcurrentMap [JobID -> job_state]
+          results  : ConcurrentMap [JobID -> OutputCache]
+      }
+      ```
+    ]
+  ]
 ]
 
 ==== Worker State (Telemetry & Networking)
 The `worker_state` tracks the networking footprint of a single daemon. To accommodate high-frequency heartbeat packets without stalling the network reader, it aggressively utilizes hardware-level atomic operations.
 
 #align(center)[
-  #rect(width: 85%, stroke: 0.8pt, inset: 1em, radius: 2pt)[
-    #align(left)[
-      ```
-      struct worker_state {
-          // Locks
-          mu             : ReadWriteLock  // Protects heartbeat timestamp
-          send_mu        : StandardLock   // Serializes outbound gRPC frames
+  #rect(width: 85%, stroke: 0.8pt, inset: 1em, radius: 2pt)[
+    #align(left)[
+      ```
+      struct worker_state {
+          // Locks
+          mu             : ReadWriteLock  // Protects heartbeat timestamp
+          send_mu        : StandardLock   // Serializes outbound gRPC frames
 
-          // Identity
-          id             : String
-          stream         : GrpcConnection
-          last_heartbeat : Timestamp
+          // Identity
+          id             : String
+          stream         : GrpcConnection
+          last_heartbeat : Timestamp
 
-          // Hardware Telemetry
-          active_tasks   : AtomicInteger
-          in_flight      : AtomicInteger
-          cpu_usage      : AtomicFloat
-      }
-      ```
-    ]
-  ]
+          // Hardware Telemetry
+          active_tasks   : AtomicInteger
+          in_flight      : AtomicInteger
+          cpu_usage      : AtomicFloat
+      }
+      ```
+    ]
+  ]
 ]
 
 *Architectural Justification:* By separating `mu` from `send_mu`, the system achieves true I/O multiplexing. The `mu` lock exclusively guards the `last_heartbeat` timestamp. Metrics like `cpu_usage` are mutated via lock-free atomic swap instructions. Consequently, the Coordinator can ingest a telemetry frame, update the internal CPU gauge, and dispatch a 4MB data chunk to the same worker simultaneously, completely devoid of cross-thread blocking.
@@ -754,29 +884,29 @@ The `worker_state` tracks the networking footprint of a single daemon. To accomm
 A `job` encapsulates a single execution stage (e.g., the Shuffle phase). The `task_state` tracks the absolute lowest-level execution unit. State mutations lock only the specific `job.mu`, keeping operations granular and localized.
 
 #align(center)[
-  #rect(width: 85%, stroke: 0.8pt, inset: 1em, radius: 2pt)[
-    #align(left)[
-      ```
-      struct job {
-          mu               : StandardLock
-          tasks            : Map [TaskID -> task_state]
-          done_tasks       : AtomicInteger
+  #rect(width: 85%, stroke: 0.8pt, inset: 1em, radius: 2pt)[
+    #align(left)[
+      ```
+      struct job {
+          mu               : StandardLock
+          tasks            : Map [TaskID -> task_state]
+          done_tasks       : AtomicInteger
 
-          // Disk Boundaries
-          store            : ResultStorePointer
-          wal              : WriteAheadLogPointer
-          chunk_assemblers : Map [TaskID -> ByteStream]
-      }
+          // Disk Boundaries
+          store            : ResultStorePointer
+          wal              : WriteAheadLogPointer
+          chunk_assemblers : Map [TaskID -> ByteStream]
+      }
 
-      struct task_state {
-          spec          : TaskSpecification
-          status        : Enum (Pending | Running | Completed | Failed)
-          worker_id     : String
-          retries       : Integer
-      }
-      ```
-    ]
-  ]
+      struct task_state {
+          spec          : TaskSpecification
+          status        : Enum (Pending | Running | Completed | Failed)
+          worker_id     : String
+          retries       : Integer
+      }
+      ```
+    ]
+  ]
 ]
 
 === Dynamic Code Shipping and Protocol Buffers
@@ -796,53 +926,53 @@ A "Task" acts as the atomic unit of distributed compute. Logically, it binds a d
 The execution of a task is governed by a strict finite state machine tracked within the `job.tasks` mapping:
 
 #figure(
-  align(center)[
-    #set text(font: "Times New Roman", size: 9pt)
-    #rect(width: 85%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-      #diagram(
-        spacing: (4.5em, 3.5em),
-        node-stroke: 0.8pt,
-        edge-stroke: 0.8pt,
-        node-corner-radius: 4pt,
-        node-inset: 0.6em,
-        node-outset: 0.7em,
-        mark-scale: 80%,
+  align(center)[
+    #set text(font: "Times New Roman", size: 9pt)
+    #rect(width: 85%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+      #diagram(
+        spacing: (4.5em, 3.5em),
+        node-stroke: 0.8pt,
+        edge-stroke: 0.8pt,
+        node-corner-radius: 4pt,
+        node-inset: 0.6em,
+        node-outset: 0.7em,
+        mark-scale: 80%,
 
-        node((0, 0), [*Pending*], name: <pending>, shape: rect, fill: rgb("#F8FAFC")),
-        node((2, 0), [*Running*], name: <running>, shape: rect, fill: rgb("#EFF6FF")),
-        node((4, -1), [*Completed*], name: <completed>, shape: rect, fill: rgb("#F0FDF4")),
-        node((4, 1), [*Failed*], name: <failed>, shape: rect, fill: rgb("#FEF2F2")),
+        node((0, 0), [*Pending*], name: <pending>, shape: rect, fill: rgb("#F8FAFC")),
+        node((2, 0), [*Running*], name: <running>, shape: rect, fill: rgb("#EFF6FF")),
+        node((4, -1), [*Completed*], name: <completed>, shape: rect, fill: rgb("#F0FDF4")),
+        node((4, 1), [*Failed*], name: <failed>, shape: rect, fill: rgb("#FEF2F2")),
 
-        edge(
-          <pending>,
-          <running>,
-          "->",
-          label: rect(fill: white, stroke: none)[Scheduler\ Allocation],
-          label-side: auto,
-        ),
-        edge(
-          <running>,
-          <completed>,
-          "->",
-          label: rect(fill: white, stroke: none)[Worker Returns\ Output],
-          label-side: left,
-        ),
-        edge(<running>, <failed>, "->", label: rect(fill: white, stroke: none)[Timeout or\ Crash], label-side: left),
+        edge(
+          <pending>,
+          <running>,
+          "->",
+          label: rect(fill: white, stroke: none)[Scheduler\ Allocation],
+          label-side: auto,
+        ),
+        edge(
+          <running>,
+          <completed>,
+          "->",
+          label: rect(fill: white, stroke: none)[Worker Returns\ Output],
+          label-side: left,
+        ),
+        edge(<running>, <failed>, "->", label: rect(fill: white, stroke: none)[Timeout or\ Crash], label-side: left),
 
-        edge(
-          <failed.west>,
-          (2, 1),
-          (1, 1),
-          <pending.south>,
-          "->",
-          label: rect(fill: white, stroke: none)[Retry Count < Max],
-          label-side: left,
-          stroke: (dash: "dashed"),
-        ),
-      )
-    ]
-  ],
-  caption: [The internal task state machine managed by the Coordinator.],
+        edge(
+          <failed.west>,
+          (2, 1),
+          (1, 1),
+          <pending.south>,
+          "->",
+          label: rect(fill: white, stroke: none)[Retry Count < Max],
+          label-side: left,
+          stroke: (dash: "dashed"),
+        ),
+      )
+    ]
+  ],
+  caption: [The internal task state machine managed by the Coordinator.],
 ) <state-machine-diagram>
 
 1. *Pending (and Recovery):* When a stage begins, the Coordinator opens the binary Write-Ahead Log (`.wal`). It scans the log to reconstruct state. Tasks flagged as `walEventCompleted` with valid outputs on disk are preemptively marked as *Completed*, skipping dispatch. Unfinished tasks are initialized as *Pending*.
@@ -854,22 +984,22 @@ The execution of a task is governed by a strict finite state machine tracked wit
 The internal state mutations and network I/O boundaries are abstracted behind a core set of highly optimized routines:
 
 #align(center)[
-  #rect(width: 95%, stroke: 0.8pt, inset: 1em, radius: 2pt)[
-    #align(left)[
-      ```
-      // Primary entry point for job ingestion and topology parsing
-      run_job_raw(ctx Context, job_id String, pipeline Pipeline,
-                  inputs []TaskInput) -> ([]TaskOutput, Error)
+  #rect(width: 95%, stroke: 0.8pt, inset: 1em, radius: 2pt)[
+    #align(left)[
+      ```
+      // Primary entry point for job ingestion and topology parsing
+      run_job_raw(ctx Context, job_id String, pipeline Pipeline,
+                  inputs []TaskInput) -> ([]TaskOutput, Error)
 
-      // Stage Executor (Invoked iteratively for pipeline.Order)
-      execute_stage(ctx Context, job_id String, stage Stage,
-                    tasks []TaskSpec) -> ([]TaskOutput, Error)
+      // Stage Executor (Invoked iteratively for pipeline.Order)
+      execute_stage(ctx Context, job_id String, stage Stage,
+                    tasks []TaskSpec) -> ([]TaskOutput, Error)
 
-      // Network Dispatcher (Handles Chunking Logic)
-      dispatch(worker_id String, spec TaskSpec) -> Error
-      ```
-    ]
-  ]
+      // Network Dispatcher (Handles Chunking Logic)
+      dispatch(worker_id String, spec TaskSpec) -> Error
+      ```
+    ]
+  ]
 ]
 
 === Orchestration Algorithms
@@ -879,36 +1009,36 @@ To maintain the integrity of the state machine without stalling the server, the 
 Instead of reacting to every incoming network event (which can trigger CPU-intensive broadcast storms), the Coordinator utilizes a batched, interval-based driver routine per stage.
 
 #figure(
-  align(center)[
-    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
-      #align(left)[
-        *Input:* Active Job object $J$, Scheduler $S$, Write-Ahead Log $"WAL"$, Clock Ticker $T$ \
-        *Output:* Continuous network dispatch of pending tasks in $J$ \
-        #line(length: 100%, stroke: 0.5pt)
-        #v(0.2em)
-        1: *loop* \
-        2: $quad$ *wait* for tick from $T$ \
-        3: $quad$ $bold(P) <- J."snapshotPending"()$ $quad$ \/\/ Safely extract all Pending tasks \
-        4: $quad$ *if* $bold(P) = emptyset$ *then* \
-        5: $quad$ $quad$ *continue* \
-        6: \
-        7: $quad$ *for each* task $t in bold(P)$ *do* \
-        8: $quad$ $quad$ $W <- S."Pick"(t."RequiredTags")$ \
-        9: $quad$ $quad$ *if* $W = "null"$ *then* \
-        10: $quad$ $quad$ $quad$ *break* $quad$ \/\/ No workers available, retry next tick \
-        11: \
-        12: $quad$ $quad$ *lock* $J.mu$ \
-        13: $quad$ $quad$ $t."status" <- "Running"$ \
-        14: $quad$ $quad$ $t."worker_id" <- W."id"$ \
-        15: $quad$ $quad$ $W."in_flight"."Add"(1)$ $quad$ \/\/ Optimistically lock worker capacity \
-        16: $quad$ $quad$ $"WAL"$.$"Log"("walEventDispatched", t."id")$ \
-        17: $quad$ $quad$ *unlock* $J.mu$ \
-        18: \
-        19: $quad$ $quad$ *spawn* $"DispatchStream"(W, t)$
-      ]
-    ]
-  ],
-  caption: [Pseudocode representation of the asynchronous batched state evaluation loop (`watchJob`)],
+  align(center)[
+    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
+      #align(left)[
+        *Input:* Active Job object $J$, Scheduler $S$, Write-Ahead Log $"WAL"$, Clock Ticker $T$ \
+        *Output:* Continuous network dispatch of pending tasks in $J$ \
+        #line(length: 100%, stroke: 0.5pt)
+        #v(0.2em)
+        1: *loop* \
+        2: $quad$ *wait* for tick from $T$ \
+        3: $quad$ $bold(P) <- J."snapshotPending"()$ $quad$ \/\/ Safely extract all Pending tasks \
+        4: $quad$ *if* $bold(P) = emptyset$ *then* \
+        5: $quad$ $quad$ *continue* \
+        6: \
+        7: $quad$ *for each* task $t in bold(P)$ *do* \
+        8: $quad$ $quad$ $W <- S."Pick"(t."RequiredTags")$ \
+        9: $quad$ $quad$ *if* $W = "null"$ *then* \
+        10: $quad$ $quad$ $quad$ *break* $quad$ \/\/ No workers available, retry next tick \
+        11: \
+        12: $quad$ $quad$ *lock* $J.mu$ \
+        13: $quad$ $quad$ $t."status" <- "Running"$ \
+        14: $quad$ $quad$ $t."worker_id" <- W."id"$ \
+        15: $quad$ $quad$ $W."in_flight"."Add"(1)$ $quad$ \/\/ Optimistically lock worker capacity \
+        16: $quad$ $quad$ $"WAL"$.$"Log"("walEventDispatched", t."id")$ \
+        17: $quad$ $quad$ *unlock* $J.mu$ \
+        18: \
+        19: $quad$ $quad$ *spawn* $"DispatchStream"(W, t)$
+      ]
+    ]
+  ],
+  caption: [Pseudocode representation of the asynchronous batched state evaluation loop (`watchJob`)],
 ) <watchjob-algo>
 
 ==== Hardware Watchdog (`reapDeadWorkerTasks`)
@@ -941,34 +1071,34 @@ Its primary operational responsibilities are:
 
 === Interface Design and Memory Isolation
 
-In monolithic distributed systems, the scheduler is often tightly coupled to the master node's central database or state registry. This architectural flaw introduces massive read/write lock contention; the scheduler cannot route a task without locking the state, thereby blocking incoming telemetry from workers. 
+In monolithic distributed systems, the scheduler is often tightly coupled to the master node's central database or state registry. This architectural flaw introduces massive read/write lock contention; the scheduler cannot route a task without locking the state, thereby blocking incoming telemetry from workers. 
 
 In Rivage, the Scheduler is implemented as a completely isolated interface. To ensure routing algorithms execute in sub-millisecond time, the Coordinator passes a detached, read-only slice of the cluster state to the Scheduler.
 
 #align(center)[
-  #rect(width: 85%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-    #align(left)[
-      #set text(font: "VictorMono NF", size: 9.5pt)
-      ```
-      interface Scheduler {
-          // Evaluates telemetry and returns the optimal Worker ID
-          Pick(workers: []WorkerSnapshot, req_tags: []String,
-               affinity: []String) -> String
-      }
+  #rect(width: 85%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+    #align(left)[
+      #set text(font: "VictorMono NF", size: 9.5pt)
+      ```
+      interface Scheduler {
+          // Evaluates telemetry and returns the optimal Worker ID
+          Pick(workers: []WorkerSnapshot, req_tags: []String,
+               affinity: []String) -> String
+      }
 
-      // Read-only, lock-free copy of daemon telemetry.
-      struct WorkerSnapshot {
-          id             : String
-          tags           : []String
-          active_tasks   : Integer
-          cpu_usage      : Float
-          last_heartbeat : Timestamp
-          cached_keys    : []String  // Local data availability
-          capacity       : Integer   // Hardware core limits
-      }
-      ```
-    ]
-  ]
+      // Read-only, lock-free copy of daemon telemetry.
+      struct WorkerSnapshot {
+          id             : String
+          tags           : []String
+          active_tasks   : Integer
+          cpu_usage      : Float
+          last_heartbeat : Timestamp
+          cached_keys    : []String  // Local data availability
+          capacity       : Integer   // Hardware core limits
+      }
+      ```
+    ]
+  ]
 ]
 
 Before the Coordinator invokes the `Pick` method, it iterates through its lock-free concurrent map. It constructs an array of `WorkerSnapshot` structs utilizing hardware-level atomic values. By passing this detached array, the Scheduler performs its mathematical scoring matrix entirely in CPU cache memory, avoiding network locks or synchronization blocking.
@@ -985,7 +1115,7 @@ While computationally cheap ($O(1)$ time complexity per allocation), it is inher
 Notice that the `RoundRobinScheduler` requires an internal standard lock to safely increment the `index` variable when the Coordinator's asynchronous driver goroutines call the algorithm concurrently.
 
 ==== Hardware Filtering and Set Theory Constraint Satisfaction
-For complex workloads, the Scheduler must respect strict hardware constraints. When a DAG stage requires specific environments, the task payload is annotated with `RequiredTags` (e.g., `["arch=amd64", "memory=high"]`). 
+For complex workloads, the Scheduler must respect strict hardware constraints. When a DAG stage requires specific environments, the task payload is annotated with `RequiredTags` (e.g., `["arch=amd64", "memory=high"]`). 
 
 The Scheduler treats this constraint satisfaction as a strict mathematical subset problem. Let $bold(R)$ represent the set of required tags defined by the task, and let $bold(T)_w$ represent the set of tags reported by a specific worker $w$. The Scheduler evaluates the boolean intersection:
 $ bold(R) subset.eq bold(T)_w $
@@ -1006,7 +1136,7 @@ $ L_"max" = max(1, floor(w."Capacity" times M_p)) $
 
 #set list(marker: [--])
 - *Multiplier 1.0 (Strict Mapping):* The limit strictly matches the core count. This is ideal for heavy, sustained CPU work where context switching must be minimized.
-- *Multiplier 2.0+ (Over-Subscription):* The limit is artificially inflated. This allows the Coordinator to dispatch tasks to a worker's internal queue *before* it has finished its current execution payload. 
+- *Multiplier 2.0+ (Over-Subscription):* The limit is artificially inflated. This allows the Coordinator to dispatch tasks to a worker's internal queue *before* it has finished its current execution payload. 
 
 The Scheduler strictly filters out any worker whose `ActiveTasks` meets or exceeds this $L_"max"$ limit, effectively applying backpressure to the entire pipeline.
 
@@ -1024,107 +1154,107 @@ The default routing strategy for the Rivage engine is the Least-Loaded algorithm
 The exact execution flow of the routing decision is illustrated in Figure 6.
 
 #figure(
-  align(center)[
-    #set text(font: "Times New Roman", size: 9pt)
-    #rect(width: 90%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-      #diagram(
-        spacing: (5em, 3em),
-        node-stroke: 0.8pt,
-        edge-stroke: 0.8pt,
-        node-corner-radius: 4pt,
-        node-inset: 0.6em,
-        mark-scale: 80%,
-        
-        node((1, 0), [*Input:* Task Requirements & \ Worker Snapshots], shape: rect, name: <input>),
-        
-        node((1, 1.5), [*Phase 1 & 2: Constraints* \ $bold(R) subset.eq w."Tags"$ \ $T_"active" < floor(w."Cap" times M_p)$], shape: rect, name: <filter>),
-        node((3, 1.5), [*Drop Worker* \ (Ineligible)], shape: rect, name: <drop1>, fill: rgb("#FEF2F2")),
-        
-        node((1, 3), [*Phase 3: Locality Max* \ Keep workers with\ $max(|w."Keys" inter bold(A)|)$], shape: rect, name: <locality>),
-        
-        node((1, 4.5), [*Phase 4: Load Min* \ Find worker with\ $min(T_"active")$], shape: rect, name: <load>),
-        
-        node((1, 6), [*Tie-Breaker* \ Select\ $min("CPU Usage")$], shape: rect, name: <tie>),
-        
-        node((1, 7.5), [*Return Optimal Worker* \ $w_"opt"$], shape: rect, name: <return>),
+  align(center)[
+    #set text(font: "Times New Roman", size: 9pt)
+    #rect(width: 90%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+      #diagram(
+        spacing: (5em, 3em),
+        node-stroke: 0.8pt,
+        edge-stroke: 0.8pt,
+        node-corner-radius: 4pt,
+        node-inset: 0.6em,
+        mark-scale: 80%,
+        
+        node((1, 0), [*Input:* Task Requirements & \ Worker Snapshots], shape: rect, name: <input>),
+        
+        node((1, 1.5), [*Phase 1 & 2: Constraints* \ $bold(R) subset.eq w."Tags"$ \ $T_"active" < floor(w."Cap" times M_p)$], shape: rect, name: <filter>),
+        node((3, 1.5), [*Drop Worker* \ (Ineligible)], shape: rect, name: <drop1>, fill: rgb("#FEF2F2")),
+        
+        node((1, 3), [*Phase 3: Locality Max* \ Keep workers with\ $max(|w."Keys" inter bold(A)|)$], shape: rect, name: <locality>),
+        
+        node((1, 4.5), [*Phase 4: Load Min* \ Find worker with\ $min(T_"active")$], shape: rect, name: <load>),
+        
+        node((1, 6), [*Tie-Breaker* \ Select\ $min("CPU Usage")$], shape: rect, name: <tie>),
+        
+        node((1, 7.5), [*Return Optimal Worker* \ $w_"opt"$], shape: rect, name: <return>),
 
-        edge(<input>, <filter>, "->"),
-        edge(<filter>, <drop1>, "->", label: rect(fill: white, stroke: none)[False], label-side: left),
-        edge(<filter>, <locality>, "->", label: rect(fill: white, stroke: none)[True], label-side: right),
-        edge(<locality>, <load>, "->"),
-        edge(<load>, <tie>, "->", label: rect(fill: white, stroke: none)[If tied load], label-side: right),
-        edge(<load>, (0, 4.5), (0, 7.5), <return.west>, "->", label: rect(fill: white, stroke: none)[Unique Min], label-side: left),
-        edge(<tie>, <return>, "->"),
-      )
-    ]
-  ],
-  caption: [Execution flow and decision matrix of the Least-Loaded routing algorithm.],
+        edge(<input>, <filter>, "->"),
+        edge(<filter>, <drop1>, "->", label: rect(fill: white, stroke: none)[False], label-side: left),
+        edge(<filter>, <locality>, "->", label: rect(fill: white, stroke: none)[True], label-side: right),
+        edge(<locality>, <load>, "->"),
+        edge(<load>, <tie>, "->", label: rect(fill: white, stroke: none)[If tied load], label-side: right),
+        edge(<load>, (0, 4.5), (0, 7.5), <return.west>, "->", label: rect(fill: white, stroke: none)[Unique Min], label-side: left),
+        edge(<tie>, <return>, "->"),
+      )
+    ]
+  ],
+  caption: [Execution flow and decision matrix of the Least-Loaded routing algorithm.],
 ) <scheduler-flow>
 
 To formalize the flowchart, the algorithm is implemented sequentially. To prevent visual overflow, it is detailed across two phases: Candidate Formulation (Algorithm 2) and Heuristic Resolution (Algorithm 3).
 
 #figure(
-  align(center)[
-    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
-      #align(left)[
-        *Input:* Required Tags $bold(R)$, Affinity Keys $bold(A)$, Worker snapshots $bold(W)$, Prefetch Multiplier $M_p$ \
-        *Output:* Localized candidate pool $bold(C)_"local"$ \
-        #line(length: 100%, stroke: 0.5pt)
-        #v(0.2em)
-        1: $bold(C) <- emptyset$ \
-        2: \
-        3: \/\/ Phase 1 & 2: Hardware Constraints and Capacity Filtering \
-        4: *for each* worker $w in bold(W)$ *do* \
-        5: $quad$ $L_"max" <- max(1, floor(w."Capacity" times M_p))$ \
-        6: $quad$ *if* $bold(R) subset.eq w."Tags"$ *and* $w."ActiveTasks" < L_"max"$ *then* \
-        7: $quad$ $quad$ $bold(C) <- bold(C) union {w}$ \
-        8: \
-        9: *if* $bold(C) = emptyset$ *then* *return* $emptyset$ \
-        10: \
-        11: \/\/ Phase 3: Locality Maximization \
-        12: $S_"max" <- -1$ \
-        13: *for each* worker $w in bold(C)$ *do* \
-        14: $quad$ $S_w <- |w."CachedKeys" inter bold(A)|$ \
-        15: $quad$ *if* $S_w > S_"max"$ *then* $S_"max" <- S_w$ \
-        16: \
-        17: $bold(C)_"local" <- {w in bold(C) | |w."CachedKeys" inter bold(A)| = S_"max"}$ \
-        18: *return* $bold(C)_"local"$
-      ]
-    ]
-  ],
-  caption: [Part 1: The $O(N)$ filtering matrix isolating hardware constraints and maximizing data locality.],
+  align(center)[
+    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
+      #align(left)[
+        *Input:* Required Tags $bold(R)$, Affinity Keys $bold(A)$, Worker snapshots $bold(W)$, Prefetch Multiplier $M_p$ \
+        *Output:* Localized candidate pool $bold(C)_"local"$ \
+        #line(length: 100%, stroke: 0.5pt)
+        #v(0.2em)
+        1: $bold(C) <- emptyset$ \
+        2: \
+        3: \/\/ Phase 1 & 2: Hardware Constraints and Capacity Filtering \
+        4: *for each* worker $w in bold(W)$ *do* \
+        5: $quad$ $L_"max" <- max(1, floor(w."Capacity" times M_p))$ \
+        6: $quad$ *if* $bold(R) subset.eq w."Tags"$ *and* $w."ActiveTasks" < L_"max"$ *then* \
+        7: $quad$ $quad$ $bold(C) <- bold(C) union {w}$ \
+        8: \
+        9: *if* $bold(C) = emptyset$ *then* *return* $emptyset$ \
+        10: \
+        11: \/\/ Phase 3: Locality Maximization \
+        12: $S_"max" <- -1$ \
+        13: *for each* worker $w in bold(C)$ *do* \
+        14: $quad$ $S_w <- |w."CachedKeys" inter bold(A)|$ \
+        15: $quad$ *if* $S_w > S_"max"$ *then* $S_"max" <- S_w$ \
+        16: \
+        17: $bold(C)_"local" <- {w in bold(C) | |w."CachedKeys" inter bold(A)| = S_"max"}$ \
+        18: *return* $bold(C)_"local"$
+      ]
+    ]
+  ],
+  caption: [Part 1: The $O(N)$ filtering matrix isolating hardware constraints and maximizing data locality.],
 ) <least-loaded-part1>
 
 #figure(
-  align(center)[
-    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
-      #align(left)[
-        *Input:* Localized candidate pool $bold(C)_"local"$ \
-        *Output:* Optimal Worker $w_"opt"$ or $emptyset$ \
-        #line(length: 100%, stroke: 0.5pt)
-        #v(0.2em)
-        19: \/\/ Phase 4: Heuristic Load Minimization \
-        20: $w_"opt" <- emptyset$ \
-        21: $min_"load" <- infinity$ \
-        22: \
-        23: *for each* worker $w in bold(C)_"local"$ *do* \
-        24: $quad$ *if* $w."ActiveTasks" < min_"load"$ *then* \
-        25: $quad$ $quad$ $min_"load" <- w."ActiveTasks"$ \
-        26: $quad$ $quad$ $w_"opt" <- w$ \
-        27: $quad$ *else if* $w."ActiveTasks" = min_"load"$ *then* \
-        28: $quad$ $quad$ \/\/ Phase 5: Hardware Utilization Tie-Breaker \
-        29: $quad$ $quad$ *if* $w."CPUUsage" < w_"opt"."CPUUsage"$ *then* \
-        30: $quad$ $quad$ $quad$ $w_"opt" <- w$ \
-        31: \
-        32: *return* $w_"opt"$
-      ]
-    ]
-  ],
-  caption: [Part 2: Applying the least-loaded heuristic and physical CPU tie-breakers to select the final node.],
+  align(center)[
+    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
+      #align(left)[
+        *Input:* Localized candidate pool $bold(C)_"local"$ \
+        *Output:* Optimal Worker $w_"opt"$ or $emptyset$ \
+        #line(length: 100%, stroke: 0.5pt)
+        #v(0.2em)
+        19: \/\/ Phase 4: Heuristic Load Minimization \
+        20: $w_"opt" <- emptyset$ \
+        21: $min_"load" <- infinity$ \
+        22: \
+        23: *for each* worker $w in bold(C)_"local"$ *do* \
+        24: $quad$ *if* $w."ActiveTasks" < min_"load"$ *then* \
+        25: $quad$ $quad$ $min_"load" <- w."ActiveTasks"$ \
+        26: $quad$ $quad$ $w_"opt" <- w$ \
+        27: $quad$ *else if* $w."ActiveTasks" = min_"load"$ *then* \
+        28: $quad$ $quad$ \/\/ Phase 5: Hardware Utilization Tie-Breaker \
+        29: $quad$ $quad$ *if* $w."CPUUsage" < w_"opt"."CPUUsage"$ *then* \
+        30: $quad$ $quad$ $quad$ $w_"opt" <- w$ \
+        31: \
+        32: *return* $w_"opt"$
+      ]
+    ]
+  ],
+  caption: [Part 2: Applying the least-loaded heuristic and physical CPU tie-breakers to select the final node.],
 ) <least-loaded-part2>
 
 === Algorithmic Complexity Analysis
-The architectural decision to detach the `WorkerSnapshot` array from the Coordinator's global `sync.Map` guarantees that the `Pick` algorithm executes purely in CPU cache memory. 
+The architectural decision to detach the `WorkerSnapshot` array from the Coordinator's global `sync.Map` guarantees that the `Pick` algorithm executes purely in CPU cache memory. 
 
 For a cluster containing $N$ worker nodes and a task defining $K$ affinity keys:
 - The Hardware Constraint and Capacity Filtering phase requires a subset check, operating in $O(N)$ time.
@@ -1155,30 +1285,30 @@ Because a worker daemon operates on physical commodity hardware, it is bound by 
 To enforce strict hardware boundaries, the Worker Daemon utilizes a bounded concurrency model implemented via a Counting Semaphore.
 
 #align(center)[
-  #rect(width: 85%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-    #align(left)[
-      #set text(font: "VictorMono NF", size: 9.5pt)
-      ```
-      struct WorkerDaemon {
-          id           : String
-          cfg          : WorkerConfig
-          client       : GrpcWorkerServiceClient
-          cpu_cores    : Integer
-          active_tasks : AtomicInteger
-          semaphore    : Channel [Size: cpu_cores]
-          task_mu      : StandardLock
-          running      : Map [TaskID -> active_task]
-      }
+  #rect(width: 85%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+    #align(left)[
+      #set text(font: "VictorMono NF", size: 9.5pt)
+      ```
+      struct WorkerDaemon {
+          id           : String
+          cfg          : WorkerConfig
+          client       : GrpcWorkerServiceClient
+          cpu_cores    : Integer
+          active_tasks : AtomicInteger
+          semaphore    : Channel [Size: cpu_cores]
+          task_mu      : StandardLock
+          running      : Map [TaskID -> active_task]
+      }
 
-      struct active_task {
-          spec         : TaskSpecification
-          cancel_func  : ContextCancelFunction
-          temp_dir     : String
-          start_time   : Timestamp
-      }
-      ```
-    ]
-  ]
+      struct active_task {
+          spec         : TaskSpecification
+          cancel_func  : ContextCancelFunction
+          temp_dir     : String
+          start_time   : Timestamp
+      }
+      ```
+    ]
+  ]
 ]
 
 The `semaphore` is a buffered channel strictly initialized to the number of physical CPU cores on the host machine (e.g., `runtime.NumCPU()`). Before the daemon spawns an OS-level subprocess, it must acquire a token from this semaphore. If the semaphore is fully saturated, the incoming task is blocked in memory. This mathematically guarantees that the daemon never exceeds a 1:1 active thread-to-core ratio, allowing the physical CPU to execute instructions with maximum cache locality.
@@ -1190,40 +1320,40 @@ As detailed in the Coordinator architecture, sending monolithic data payloads (s
 When these frames arrive at the Compute Plane, the Worker Daemon must intercept them without accumulating the bytes in RAM. It achieves this via a temporary file-backed `ChunkAssembler`.
 
 #figure(
-  align(center)[
-    #set text(font: "Times New Roman", size: 9pt)
-    #rect(width: 100%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-      #diagram(
-        spacing: (4em, 3em),
-        node-stroke: 0.8pt,
-        edge-stroke: 0.8pt,
-        node-corner-radius: 4pt,
-        node-inset: 0.5em,
-        node-outset: 0.4em,
-        mark-scale: 80%,
+  align(center)[
+    #set text(font: "Times New Roman", size: 9pt)
+    #rect(width: 100%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+      #diagram(
+        spacing: (4em, 3em),
+        node-stroke: 0.8pt,
+        edge-stroke: 0.8pt,
+        node-corner-radius: 4pt,
+        node-inset: 0.5em,
+        node-outset: 0.4em,
+        mark-scale: 80%,
 
-        node((0, 0), [*HTTP/2 gRPC Stream* \ `Recv()`], shape: rect, name: <grpc_in> ),
-        node((1.5, 0), [*Chunk Assembler* \ (RAM Buffer)], shape: rect, name: <assembler>),
-        node((3, 0), [*Local Storage* \ Temporary File], shape: cylinder, name: <disk_in> ),
+        node((0, 0), [*HTTP/2 gRPC Stream* \ `Recv()`], shape: rect, name: <grpc_in> ),
+        node((1.5, 0), [*Chunk Assembler* \ (RAM Buffer)], shape: rect, name: <assembler>),
+        node((3, 0), [*Local Storage* \ Temporary File], shape: cylinder, name: <disk_in> ),
 
-        node((3, 1.5), [*POSIX Isolation* \ `os/exec` Subprocess], shape: rect, name: <exec> ),
+        node((3, 1.5), [*POSIX Isolation* \ `os/exec` Subprocess], shape: rect, name: <exec> ),
 
-        node((3, 3), [*Local Storage* \ Output File], shape: cylinder, name: <disk_out> ),
-        node((1.5, 3), [*Chunk Reader* \ (512KB Frames)], shape: rect, name: <reader>),
-        node((0, 3), [*HTTP/2 gRPC Stream* \ `Send()`], shape: rect, name: <grpc_out> ),
+        node((3, 3), [*Local Storage* \ Output File], shape: cylinder, name: <disk_out> ),
+        node((1.5, 3), [*Chunk Reader* \ (512KB Frames)], shape: rect, name: <reader>),
+        node((0, 3), [*HTTP/2 gRPC Stream* \ `Send()`], shape: rect, name: <grpc_out> ),
 
-        edge(<grpc_in>, <assembler>, "->", label: rect(fill: white, stroke: none)[Chunks], label-side: auto),
-        edge(<assembler>, <disk_in>, "->", label: rect(fill: white, stroke: none)[Append], label-side: auto),
+        edge(<grpc_in>, <assembler>, "->", label: rect(fill: white, stroke: none)[Chunks], label-side: auto),
+        edge(<assembler>, <disk_in>, "->", label: rect(fill: white, stroke: none)[Append], label-side: auto),
 
-        edge(<disk_in>, <exec>, "->", label: rect(fill: white, stroke: none)[Pipe via `stdin`], label-side: auto),
-        edge(<exec>, <disk_out>, "->", label: rect(fill: white, stroke: none)[Capture `stdout`], label-side: right),
+        edge(<disk_in>, <exec>, "->", label: rect(fill: white, stroke: none)[Pipe via `stdin`], label-side: auto),
+        edge(<exec>, <disk_out>, "->", label: rect(fill: white, stroke: none)[Capture `stdout`], label-side: right),
 
-        edge(<disk_out>, <reader>, "->", label: rect(fill: white, stroke: none)[Stream Read], label-side: auto),
-        edge(<reader>, <grpc_out>, "->", label: rect(fill: white, stroke: none)[Chunks], label-side: auto),
-      )
-    ]
-  ],
-  caption: [The Worker Daemon's bounded-memory I/O pipeline. Data is continuously flushed to local disk to preserve RAM during polyglot execution.],
+        edge(<disk_out>, <reader>, "->", label: rect(fill: white, stroke: none)[Stream Read], label-side: auto),
+        edge(<reader>, <grpc_out>, "->", label: rect(fill: white, stroke: none)[Chunks], label-side: auto),
+      )
+    ]
+  ],
+  caption: [The Worker Daemon's bounded-memory I/O pipeline. Data is continuously flushed to local disk to preserve RAM during polyglot execution.],
 ) <worker-io-pipeline>
 
 By maintaining this strict disk-buffering protocol, a worker node with only 2GB of physical RAM can comfortably process a 50GB dataset partition without crashing.
@@ -1232,7 +1362,7 @@ By maintaining this strict disk-buffering protocol, a worker node with only 2GB 
 
 Once the binary stream is fully assembled on the worker's disk, the data crosses the execution boundary. The true power of the Rivage engine lies in its ability to run arbitrary user code (Python, Rust, Bash, etc.) without requiring the user to install a heavy middleware SDK (such as PySpark or Hadoop libraries).
 
-The daemon leverages the host operating system's POSIX capabilities. It forks a new, isolated process (`os/exec.CommandContext`) utilizing the binary or script path defined in the `TaskSpec`. 
+The daemon leverages the host operating system's POSIX capabilities. It forks a new, isolated process (`os/exec.CommandContext`) utilizing the binary or script path defined in the `TaskSpec`. 
 
 To pass the data to this agnostic script, the daemon employs two universal Unix mechanisms:
 1. *Standard Input Piping (`stdin`):* The daemon opens the assembled local file and pipes its byte stream directly into the subprocess's `stdin`. The user's script (e.g., `sys.stdin` in Python) simply reads line-by-line.
@@ -1245,42 +1375,42 @@ Upon successful execution, the script emits its deterministic results to standar
 The complete lifecycle from chunk ingestion to process execution and upstream transmission is formally defined in Algorithm 4.
 
 #figure(
-  align(center)[
-    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
-      #align(left)[
-        *Input:* A buffered gRPC stream $S$, System Semaphore $Sigma$ \
-        *Output:* A deterministic binary output stream or execution failure \
-        #line(length: 100%, stroke: 0.5pt)
-        #v(0.2em)
-        1: $T_"spec", F_"in" <- "ReassembleFromStream"(S)$ \
-        2: \
-        4: $"Acquire"(Sigma)$ \/\/ Block until a CPU core is available \
-        5: $"ActiveTasks"."Add"(1)$ \
-        6: \
-        8: $"Ctx" <- "WithTimeout"("Background"(), T_"spec"."Timeout")$ \
-        9: $P <- "exec.CommandContext"("Ctx", T_"spec"."Command", T_"spec"."Args")$ \
-        10: \
-        11: $P."Env" <- "Inject"(T_"spec"."EnvVars")$ \
-        12: $P."Stdin" <- "OpenFile"(F_"in", "ReadOnly")$ \
-        13: $F_"out" <- "CreateTempFile"()$ \
-        14: $P."Stdout" <- F_"out"$ \
-        15: \
-        17: $E_"err" <- P."Run"()$ \
-        18: \
-        19: $"Release"(Sigma)$ \/\/ Relinquish the CPU core immediately \
-        20: $"ActiveTasks"."Sub"(1)$ \
-        21: \
-        23: *if* $E_"err" != "null"$ *or* $"Ctx.Err"() != "null"$ *then* \
-        24: $quad$ $"SendStatus"(S, "FAILED")$ \
-        25: $quad$ $"CleanupFiles"(F_"in", F_"out")$ \
-        26: $quad$ *return* \
-        27: \
-        28: $"StreamFileUpstream"(S, F_"out", "ChunkSize" = 512"KB")$ \
-        29: $"CleanupFiles"(F_"in", F_"out")$
-      ]
-    ]
-  ],
-  caption: [Pseudocode representing the bounded-memory POSIX execution pipeline within the Worker Daemon.],
+  align(center)[
+    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
+      #align(left)[
+        *Input:* A buffered gRPC stream $S$, System Semaphore $Sigma$ \
+        *Output:* A deterministic binary output stream or execution failure \
+        #line(length: 100%, stroke: 0.5pt)
+        #v(0.2em)
+        1: $T_"spec", F_"in" <- "ReassembleFromStream"(S)$ \
+        2: \
+        4: $"Acquire"(Sigma)$ \/\/ Block until a CPU core is available \
+        5: $"ActiveTasks"."Add"(1)$ \
+        6: \
+        8: $"Ctx" <- "WithTimeout"("Background"(), T_"spec"."Timeout")$ \
+        9: $P <- "exec.CommandContext"("Ctx", T_"spec"."Command", T_"spec"."Args")$ \
+        10: \
+        11: $P."Env" <- "Inject"(T_"spec"."EnvVars")$ \
+        12: $P."Stdin" <- "OpenFile"(F_"in", "ReadOnly")$ \
+        13: $F_"out" <- "CreateTempFile"()$ \
+        14: $P."Stdout" <- F_"out"$ \
+        15: \
+        17: $E_"err" <- P."Run"()$ \
+        18: \
+        19: $"Release"(Sigma)$ \/\/ Relinquish the CPU core immediately \
+        20: $"ActiveTasks"."Sub"(1)$ \
+        21: \
+        23: *if* $E_"err" != "null"$ *or* $"Ctx.Err"() != "null"$ *then* \
+        24: $quad$ $"SendStatus"(S, "FAILED")$ \
+        25: $quad$ $"CleanupFiles"(F_"in", F_"out")$ \
+        26: $quad$ *return* \
+        27: \
+        28: $"StreamFileUpstream"(S, F_"out", "ChunkSize" = 512"KB")$ \
+        29: $"CleanupFiles"(F_"in", F_"out")$
+      ]
+    ]
+  ],
+  caption: [Pseudocode representing the bounded-memory POSIX execution pipeline within the Worker Daemon.],
 ) <worker-exec-algo>
 
 === Telemetry and The Heartbeat Loop
@@ -1301,15 +1431,15 @@ Worker daemons operate in an environment where arbitrary, user-defined polyglot 
 
 ==== POSIX Isolation and Timeout Enforcement
 
-As detailed in the Worker Daemon architecture, user scripts are never executed within the daemon's native Go memory space. By leveraging operating system-level process forking (`os/exec`), the engine enforces a strict physical boundary. 
+As detailed in the Worker Daemon architecture, user scripts are never executed within the daemon's native Go memory space. By leveraging operating system-level process forking (`os/exec`), the engine enforces a strict physical boundary. 
 
-If a user's Python script attempts to allocate more RAM than physically available, the Linux Out-Of-Memory (OOM) killer will terminate the child process (`SIGKILL`), but the Go worker daemon will survive. The daemon intercepts the non-zero exit status, cleans up the temporary disk files, and reports a structured error upstream. 
+If a user's Python script attempts to allocate more RAM than physically available, the Linux Out-Of-Memory (OOM) killer will terminate the child process (`SIGKILL`), but the Go worker daemon will survive. The daemon intercepts the non-zero exit status, cleans up the temporary disk files, and reports a structured error upstream. 
 
 Furthermore, to prevent infinite loops (e.g., a `while True` bug in the user's code), the Coordinator embeds a strict `Timeout` constraint inside every `TaskSpec`. The Worker Daemon enforces this using a context cancellation function. If the system clock exceeds the deadline, the daemon forcefully sends a `SIGTERM` to the child process, releasing the CPU core back to the counting semaphore.
 
 ==== The Watchdog and Idempotent Retries
 
-If the worker daemon itself crashes (e.g., power loss to the physical machine), the node will drop off the HTTP/2 gRPC stream and cease transmitting telemetry. 
+If the worker daemon itself crashes (e.g., power loss to the physical machine), the node will drop off the HTTP/2 gRPC stream and cease transmitting telemetry. 
 
 The Coordinator's global Watchdog algorithm detects this by evaluating the `last_heartbeat` timestamp. Because MapReduce tasks are mathematically modeled as pure, idempotent functions, the Coordinator does not need to attempt a complex state rollback. It simply discards the dead node's active tasks, downgrades their state from `Running` to `Pending`, and re-queues them for the next available healthy node. This guarantees eventual completion without side-effect corruption.
 
@@ -1326,24 +1456,24 @@ To achieve durability with $O(1)$ write latency, the Coordinator implements a lo
 The WAL operates sequentially and uses an append-only architecture. Because modern NVMe drives handle sequential appends significantly faster than random B-Tree database inserts, the logging overhead is virtually negligible.
 
 #align(center)[
-  #rect(width: 85%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-    #align(left)[
-      #set text(font: "VictorMono NF", size: 9.5pt)
-      ```
-      struct wal_entry {
-          timestamp   : Integer (Unix Epoch)
-          event_type  : Byte  (Dispatched=1, Completed=2, Failed=3)
-          task_id     : String
-          worker_id   : String
-      }
+  #rect(width: 85%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+    #align(left)[
+      #set text(font: "VictorMono NF", size: 9.5pt)
+      ```
+      struct wal_entry {
+          timestamp   : Integer (Unix Epoch)
+          event_type  : Byte  (Dispatched=1, Completed=2, Failed=3)
+          task_id     : String
+          worker_id   : String
+      }
 
-      interface JobWAL {
-          Log(event: Byte, task: String, worker: String) -> Error
-          Recover() -> []wal_entry
-      }
-      ```
-    ]
-  ]
+      interface JobWAL {
+          Log(event: Byte, task: String, worker: String) -> Error
+          Recover() -> []wal_entry
+      }
+      ```
+    ]
+  ]
 ]
 
 Every stage in the DAG is assigned its own isolated WAL file. When the `watchJob` algorithm routes a task, it calls `WAL.Log(Dispatched)` *before* sending the payload over the network. When the result is successfully saved to the `ResultStore`, it calls `WAL.Log(Completed)`.
@@ -1352,40 +1482,40 @@ Every stage in the DAG is assigned its own isolated WAL file. When the `watchJob
 
 If the Coordinator node crashes midway through a 10,000-task Map stage, it must reconstruct the exact execution state upon reboot to avoid repeating successfully completed work.
 
-During the initialization of a DAG stage, the Coordinator performs a localized recovery pass. It opens the `.wal` file and sequentially replays the binary events to rebuild the state machine in memory. 
+During the initialization of a DAG stage, the Coordinator performs a localized recovery pass. It opens the `.wal` file and sequentially replays the binary events to rebuild the state machine in memory. 
 
 #figure(
-  align(center)[
-    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
-      #align(left)[
-        *Input:* A binary WAL file $F$, Array of initial tasks $bold(T)$ \
-        *Output:* Reconstructed state map $bold(M)_"state"$ \
-        #line(length: 100%, stroke: 0.5pt)
-        #v(0.2em)
-        1: *for each* task $t in bold(T)$ *do* \
-        2: $quad$ $bold(M)_"state"[t."id"] <- "Pending"$ \
-        3: \
-        4: \/\/ Phase 1: Sequential Replay \
-        5: *while* not $"EOF(F)"$ *do* \
-        6: $quad$ $E <- "ReadEntry"(F)$ \
-        7: $quad$ *if* $E."event_type" = "Dispatched"$ *then* \
-        8: $quad$ $quad$ $bold(M)_"state"[E."task_id"] <- "Running"$ \
-        9: $quad$ *else if* $E."event_type" = "Completed"$ *then* \
-        10: $quad$ $quad$ $bold(M)_"state"[E."task_id"] <- "Completed"$ \
-        11: $quad$ *else if* $E."event_type" = "Failed"$ *then* \
-        12: $quad$ $quad$ $bold(M)_"state"[E."task_id"] <- "Failed"$ \
-        13: \
-        14: \/\/ Phase 2: Orphan Resolution \
-        15: *for each* key $k$ in $bold(M)_"state"$ *do* \
-        16: $quad$ *if* $bold(M)_"state"[k] = "Running"$ *then* \
-        17: $quad$ $quad$ \/\/ Task was dispatched before crash, but never completed \
-        18: $quad$ $quad$ $bold(M)_"state"[k] <- "Pending"$ \
-        19: \
-        20: *return* $bold(M)_"state"$
-      ]
-    ]
-  ],
-  caption: [Pseudocode representing the deterministic WAL recovery algorithm executed during master node reboot.],
+  align(center)[
+    #rect(width: 100%, stroke: 0.8pt, inset: 1.2em)[
+      #align(left)[
+        *Input:* A binary WAL file $F$, Array of initial tasks $bold(T)$ \
+        *Output:* Reconstructed state map $bold(M)_"state"$ \
+        #line(length: 100%, stroke: 0.5pt)
+        #v(0.2em)
+        1: *for each* task $t in bold(T)$ *do* \
+        2: $quad$ $bold(M)_"state"[t."id"] <- "Pending"$ \
+        3: \
+        4: \/\/ Phase 1: Sequential Replay \
+        5: *while* not $"EOF(F)"$ *do* \
+        6: $quad$ $E <- "ReadEntry"(F)$ \
+        7: $quad$ *if* $E."event_type" = "Dispatched"$ *then* \
+        8: $quad$ $quad$ $bold(M)_"state"[E."task_id"] <- "Running"$ \
+        9: $quad$ *else if* $E."event_type" = "Completed"$ *then* \
+        10: $quad$ $quad$ $bold(M)_"state"[E."task_id"] <- "Completed"$ \
+        11: $quad$ *else if* $E."event_type" = "Failed"$ *then* \
+        12: $quad$ $quad$ $bold(M)_"state"[E."task_id"] <- "Failed"$ \
+        13: \
+        14: \/\/ Phase 2: Orphan Resolution \
+        15: *for each* key $k$ in $bold(M)_"state"$ *do* \
+        16: $quad$ *if* $bold(M)_"state"[k] = "Running"$ *then* \
+        17: $quad$ $quad$ \/\/ Task was dispatched before crash, but never completed \
+        18: $quad$ $quad$ $bold(M)_"state"[k] <- "Pending"$ \
+        19: \
+        20: *return* $bold(M)_"state"$
+      ]
+    ]
+  ],
+  caption: [Pseudocode representing the deterministic WAL recovery algorithm executed during master node reboot.],
 ) <wal-recovery-algo>
 
 The critical logic occurs in Phase 2 (Orphan Resolution). If the WAL replay finishes and a task is left in the `Running` state, it means the master dispatched the task but crashed before it could record the completion. The master assumes the task was lost or the network connection was severed during the crash. It conservatively downgrades the task back to `Pending`.
@@ -1401,55 +1531,55 @@ While the Coordinator, Scheduler, and Worker Daemon handle the physical executio
 To define a custom Map or Reduce function, a developer simply writes a standalone script in any language. The only contract enforced by the Rivage engine is that the script must read its input payload from standard input (`stdin`) and emit its deterministic result to standard output (`stdout`).
 
 #align(center)[
-  #rect(width: 95%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-    #align(left)[
-      #set text(font: "VictorMono NF", size: 9pt)
-      // Example: A custom Python Reduce function
-      ```
-      import sys, json
+  #rect(width: 95%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+    #align(left)[
+      #set text(font: "VictorMono NF", size: 9pt)
+      // Example: A custom Python Reduce function
+      ```
+      import sys, json
 
-      def main():
-          // 1. Read grouped intermediate data from the orchestrator
-          data = json.load(sys.stdin)
+      def main():
+          // 1. Read grouped intermediate data from the orchestrator
+          data = json.load(sys.stdin)
 
-          // 2. Perform custom aggregation logic
-          target_key = data["key"]
-          total_sum = sum(int(val) for val in data["values"])
+          // 2. Perform custom aggregation logic
+          target_key = data["key"]
+          total_sum = sum(int(val) for val in data["values"])
 
-          // 3. Emit the final result back to the orchestrator
-          print(json.dumps({target_key: total_sum}))
+          // 3. Emit the final result back to the orchestrator
+          print(json.dumps({target_key: total_sum}))
 
-      if __name__ == "__main__":
-          main()
-      ```
-    ]
-  ]
+      if __name__ == "__main__":
+          main()
+      ```
+    ]
+  ]
 ]
 
 Because this script requires zero Rivage-specific SDKs or libraries, it can natively import advanced computational frameworks like `numpy`, `tensorflow`, or custom C++ math bindings without conflicting with the Go orchestrator.
 
 === The DAG Builder Interface
 
-To construct a workflow, the developer uses the `dag.Builder` interface within the Go Control Plane. This fluent API allows operators to wire sequential or branching execution stages together. 
+To construct a workflow, the developer uses the `dag.Builder` interface within the Go Control Plane. This fluent API allows operators to wire sequential or branching execution stages together. 
 
 #align(center)[
-  #rect(width: 95%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-    #align(left)[
-      #set text(font: "VictorMono NF", size: 9pt)
-      ```
-      pipeline, err := dag.New("distributed_analytics").
-          Stage("map_phase",
-              dag.ScriptExecutor("python3", "map.py"),
-              dag.WithParallelism(100), // Max concurrent tasks
-          ).
-          Stage("reduce_phase",
-              dag.ScriptExecutor("python3", "reduce.py"),
-              dag.WithShuffle(dag.JSONKeyGroupShuffle()),
-          ).
-          Build()
-      ```
-    ]
-  ]
+  #rect(width: 95%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+    #align(left)[
+      #set text(font: "VictorMono NF", size: 9pt)
+      ```
+      pipeline, err := dag.New("distributed_analytics").
+          Stage("map_phase",
+              dag.ScriptExecutor("python3", "map.py"),
+              dag.WithParallelism(100), // Max concurrent tasks
+          ).
+          Stage("reduce_phase",
+              dag.ScriptExecutor("python3", "reduce.py"),
+              dag.WithShuffle(dag.JSONKeyGroupShuffle()),
+          ).
+          Build()
+      ```
+    ]
+  ]
 ]
 
 When `pipeline.Build()` is invoked, the engine statically analyzes the declared stages, performs Kahn's Algorithm to generate the topological execution order, and mathematically guarantees the absence of circular dependencies before any network activity begins.
@@ -1461,43 +1591,43 @@ The most computationally expensive phase of any distributed MapReduce pipeline i
 To solve this, Rivage exposes a completely programmable data routing boundary via the `ShuffleFunc` interface:
 
 #align(center)[
-  #rect(width: 95%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-    #align(left)[
-      #set text(font: "VictorMono NF", size: 9pt)
-      // ShuffleFunc transforms upstream task outputs into downstream inputs
-      type ShuffleFunc func(outputs []TaskOutput) (ShuffleResult, error)
-    ]
-  ]
+  #rect(width: 95%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+    #align(left)[
+      #set text(font: "VictorMono NF", size: 9pt)
+      // ShuffleFunc transforms upstream task outputs into downstream inputs
+      type ShuffleFunc func(outputs []TaskOutput) (ShuffleResult, error)
+    ]
+  ]
 ]
 
 By supplying a custom `ShuffleFunc` to a stage, the developer overrides the default MapReduce routing. For example, instead of sorting strings, a developer performing a distributed matrix multiplication can write a custom mathematical router:
 
 #align(center)[
-  #rect(width: 95%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
-    #align(left)[
-      #set text(font: "VictorMono NF", size: 9pt)
-      ```
-      func MatMulRowBandShuffle(outputs []dag.TaskOutput) (dag.ShuffleResult, error) {
-          // 1. Intercept all completed tile multiplications
-          rowGroups := make(map[int][]json.RawMessage)
+  #rect(width: 95%, stroke: 0.8pt, inset: 1.5em, radius: 2pt)[
+    #align(left)[
+      #set text(font: "VictorMono NF", size: 9pt)
+      ```
+      func MatMulRowBandShuffle(outputs []dag.TaskOutput) (dag.ShuffleResult, error) {
+          // 1. Intercept all completed tile multiplications
+          rowGroups := make(map[int][]json.RawMessage)
 
-          for _, out := range outputs {
-              meta := parseTileMetadata(out.Data)
-              // 2. Group matrix tiles mathematically by their geometric Row
-              rowGroups[meta.TileRow] = append(rowGroups[meta.TileRow], out.Data)
-          }
+          for _, out := range outputs {
+              meta := parseTileMetadata(out.Data)
+              // 2. Group matrix tiles mathematically by their geometric Row
+              rowGroups[meta.TileRow] = append(rowGroups[meta.TileRow], out.Data)
+          }
 
-          res := make(dag.ShuffleResult)
-          for row, tiles := range rowGroups {
-              // 3. Generate a custom Reduce task specifically for this row band
-              taskID := fmt.Sprintf("assemble-row-%d", row)
-              res[taskID] = dag.TaskInput{Data: serialize(row, tiles)}
-          }
-          return res, nil
-      ```
-      }
-    ]
-  ]
+          res := make(dag.ShuffleResult)
+          for row, tiles := range rowGroups {
+              // 3. Generate a custom Reduce task specifically for this row band
+              taskID := fmt.Sprintf("assemble-row-%d", row)
+              res[taskID] = dag.TaskInput{Data: serialize(row, tiles)}
+          }
+          return res, nil
+      ```
+      }
+    ]
+  ]
 ]
 
 This architecture allows Rivage to dynamically morph from a standard MapReduce text processor into a highly specialized, grid-based High-Performance Computing (HPC) engine simply by altering the `ShuffleFunc` at the DAG initialization phase, eliminating the need for specialized external frameworks.

@@ -3,3 +3,4 @@ report/report.pdf
 bin/
 proto/rivage.pb.go
 proto/rivage_grpc.pb.go
+ignored/

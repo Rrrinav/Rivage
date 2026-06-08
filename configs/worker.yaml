@@ -31,4 +31,3 @@ security:
 # Worker capability tags. The coordinator can target tasks to workers with
 # specific tags. Examples: ["gpu", "high-mem", "fast-disk", "zone-eu"]
 tags: []
-

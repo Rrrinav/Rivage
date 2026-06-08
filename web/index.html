@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body class="bg-gray-100 text-gray-800 font-sans p-6 min-h-screen">
     <div class="max-w-7xl mx-auto space-y-6">
-        
+
         <!-- Header -->
         <div class="flex justify-between items-center bg-white p-4 rounded shadow-sm border border-gray-200">
             <div>
@@ -30,7 +32,8 @@
             </div>
             <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
                 <div class="text-xs text-gray-500 font-bold mb-1 uppercase">Throughput</div>
-                <div class="text-3xl font-bold text-blue-600"><span id="kpi-tps">0</span> <span class="text-base text-gray-400 font-normal">tps</span></div>
+                <div class="text-3xl font-bold text-blue-600"><span id="kpi-tps">0</span> <span
+                        class="text-base text-gray-400 font-normal">tps</span></div>
             </div>
             <div class="bg-white p-4 rounded shadow-sm border border-gray-200">
                 <div class="text-xs text-gray-500 font-bold mb-1 uppercase">Tasks Completed</div>
@@ -44,7 +47,7 @@
 
         <!-- Main Dashboard Area -->
         <div class="grid grid-cols-3 gap-6">
-            
+
             <!-- Left Column: Chart & Logs -->
             <div class="col-span-2 space-y-6">
                 <!-- Chart -->
@@ -57,17 +60,20 @@
 
                 <!-- Logs -->
                 <div class="bg-gray-900 rounded shadow-sm border border-gray-800 flex flex-col h-[300px]">
-                    <div class="px-4 py-2 bg-gray-800 border-b border-gray-700 text-xs font-mono text-gray-400 flex justify-between">
+                    <div
+                        class="px-4 py-2 bg-gray-800 border-b border-gray-700 text-xs font-mono text-gray-400 flex justify-between">
                         <span>system.log</span>
                         <span class="animate-pulse text-green-500">Live</span>
                     </div>
-                    <pre id="terminal-output" class="p-4 text-[12px] font-mono text-gray-300 overflow-y-auto flex-1 whitespace-pre-wrap break-all"></pre>
+                    <pre id="terminal-output"
+                        class="p-4 text-[12px] font-mono text-gray-300 overflow-y-auto flex-1 whitespace-pre-wrap break-all">
+                    </pre>
                 </div>
             </div>
 
             <!-- Right Column: Workers, Jobs, Results -->
             <div class="col-span-1 space-y-6">
-                
+
                 <!-- Workers -->
                 <div class="bg-white p-4 rounded shadow-sm border border-gray-200 h-[280px] flex flex-col">
                     <h2 class="text-sm font-bold text-gray-700 mb-2 border-b pb-2">Worker Fleet</h2>
@@ -107,17 +113,17 @@
             data: {
                 labels: Array(maxDataPoints).fill(''),
                 datasets: [
-                    { label: 'Tasks / Sec', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0, yAxisID: 'y', data: Array(maxDataPoints).fill(0) },
-                    { label: 'Avg CPU %', borderColor: '#64748b', borderWidth: 2, borderDash: [4, 4], tension: 0.1, pointRadius: 0, yAxisID: 'y1', data: Array(maxDataPoints).fill(0) }
+                    {label: 'Tasks / Sec', borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.1)', borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0, yAxisID: 'y', data: Array(maxDataPoints).fill(0)},
+                    {label: 'Avg CPU %', borderColor: '#64748b', borderWidth: 2, borderDash: [4, 4], tension: 0.1, pointRadius: 0, yAxisID: 'y1', data: Array(maxDataPoints).fill(0)}
                 ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false, animation: false,
-                plugins: { legend: { position: 'top', labels: { color: '#64748b', usePointStyle: true, boxWidth: 6 } } },
+                plugins: {legend: {position: 'top', labels: {color: '#64748b', usePointStyle: true, boxWidth: 6}}},
                 scales: {
-                    x: { display: false },
-                    y: { title: { display: true, text: 'TPS', color: '#94a3b8', font: { size: 10 } }, beginAtZero: true, suggestedMax: 10 },
-                    y1: { title: { display: true, text: 'CPU %', color: '#94a3b8', font: { size: 10 } }, position: 'right', min: 0, max: 100, grid: { display: false } }
+                    x: {display: false},
+                    y: {title: {display: true, text: 'TPS', color: '#94a3b8', font: {size: 10}}, beginAtZero: true, suggestedMax: 10},
+                    y1: {title: {display: true, text: 'CPU %', color: '#94a3b8', font: {size: 10}}, position: 'right', min: 0, max: 100, grid: {display: false}}
                 }
             }
         });
@@ -139,7 +145,7 @@
         function render(data) {
             const now = Date.now();
             const dt = (now - lastTime) / 1000;
-            
+
             let tps = 0;
             if (lastCompleted > 0 && dt > 0) {
                 tps = Math.max(0, (data.metrics.completed - lastCompleted) / dt);
@@ -159,7 +165,7 @@
             // Idle detection
             const numJobs = (data.jobs || []).length;
             const isIdle = (numJobs === 0 && tps === 0 && activeTasks === 0);
-            
+
             if (isIdle) {
                 document.getElementById('status-dot').className = "h-3 w-3 bg-gray-300 rounded-full";
                 document.getElementById('status-text').innerText = "IDLE";
@@ -230,7 +236,7 @@
                     return `
                     <div class="bg-gray-50 p-2 rounded border border-gray-200">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="font-mono text-xs font-bold text-gray-700 truncate w-32" title="${w.id}">${w.id.split('-').slice(0,2).join('-')}..</span>
+                            <span class="font-mono text-xs font-bold text-gray-700 truncate w-32" title="${w.id}">${w.id.split('-').slice(0, 2).join('-')}..</span>
                             <span class="text-[10px] text-gray-500 font-medium">${w.uptime}</span>
                         </div>
                         <div class="flex items-center gap-3">
@@ -272,4 +278,5 @@
         fetchState();
     </script>
 </body>
+
 </html>

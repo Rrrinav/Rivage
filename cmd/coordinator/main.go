@@ -148,7 +148,7 @@ func main() {
 
 		case "hashcrack":
 			log.Printf("[demo] Starting CPU-Bound Distributed Hash Cracking...")
-			targetPassword := "riva"
+			targetPassword := "futile"
 
 			start := time.Now()
 			resultMeta, err := hashcrack.CrackJob(ctx, coord, targetPassword, jobID, *resumeFlag)

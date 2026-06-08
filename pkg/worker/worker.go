@@ -570,8 +570,7 @@ func (w *Worker) sendResult(ctx context.Context, stream pb.WorkerService_Connect
 	w.log.Debug("Finished streaming result", "task", result.TaskId, "chunks", seqNum)
 }
 
-// ── Heartbeat ─────────────────────────────────────────────────────────────────
-
+// Heartbeat
 func (w *Worker) heartbeatLoop(ctx context.Context, stream pb.WorkerService_ConnectClient) {
 	interval := w.cfg.Execution.HeartbeatInterval.Duration
 	if interval == 0 {

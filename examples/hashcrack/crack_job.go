@@ -96,7 +96,6 @@ func processResults(outputs []dag.TaskOutput) (string, error) {
 		"recovered_password":          foundPassword,
 		"winning_task_prefix":         winnerPrefix,
 		"total_aggregate_compute_sec": totalCompute,
-		"network_io_bottleneck":       "Eliminated (Pure CPU Workload)",
 	}
 
 	bytes, _ := json.MarshalIndent(summary, "", "  ")
