@@ -92,7 +92,8 @@ message TaskSpec {
   int32           max_retries   = 11;
   int32           retry_count   = 12;
   repeated string required_tags = 13;
-  repeated string affinity_keys = 14; // NEW: Data Locality tags
+  repeated string affinity_keys = 14;
+  string datastore_url = 15;
 }
 
 message ChunkedTaskSpec {
@@ -113,6 +114,7 @@ message ChunkedTaskSpec {
   bool            is_final      = 15;
   int64           total_size    = 16;
   repeated string affinity_keys = 17; // NEW: Data Locality tags
+  string datastore_url = 16;
 }
 
 message TaskResult {

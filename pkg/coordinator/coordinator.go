@@ -562,6 +562,7 @@ func (c *Coordinator) makeTaskSpec(jobID string, stage *dag.Stage, taskID string
 		TimeoutSeconds: int64(timeout),
 		MaxRetries:     maxRetries,
 		RequiredTags:   exec.RequiredTags,
+		DatastoreUrl:   c.cfg.Server.DatastoreURL,
 	}
 	if exec.CodeFile != "" {
 		spec.Code = codeCache[exec.CodeFile]
@@ -782,6 +783,7 @@ func (c *Coordinator) dispatch(workerID string, spec *pb.TaskSpec) error {
 			msg.RequiredTags = spec.RequiredTags
 			msg.AffinityKeys = spec.AffinityKeys
 			msg.TotalSize = totalSize
+			msg.DatastoreUrl = spec.DatastoreUrl
 		} else {
 			msg.TaskId = spec.TaskId
 		}

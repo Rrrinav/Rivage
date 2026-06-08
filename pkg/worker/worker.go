@@ -291,10 +291,9 @@ func (w *Worker) receiveChunk(cr *pb.ChunkedTaskSpec) *pb.TaskSpec {
 		RetryCount:     first.RetryCount,
 		RequiredTags:   first.RequiredTags,
 		InputData:      nil,
+		DatastoreUrl:   first.DatastoreUrl,
 	}
 }
-
-// ── Task execution ────────────────────────────────────────────────────────────
 
 type taskResult struct {
 	proto    *pb.TaskResult
@@ -432,11 +431,17 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 	stderrBuf := &cappedBuffer{cap: maxStderrBytes}
 
 	cmd := exec.CommandContext(ctx, command, args...)
-	cmd.Stdin = bytes.NewReader(spec.InputData) // fallback stdin for scripts that read it directly
+	cmd.Stdin = bytes.NewReader(spec.InputData)
 	cmd.Stdout = outFile
 	cmd.Stderr = stderrBuf
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("RIVAGE_WORKER_ID=%s", w.id))
+	
+	// Inject the dynamic Datastore URL so polyglot scripts can fetch data over the network
+	if spec.DatastoreUrl != "" {
+		cmd.Env = append(cmd.Env, fmt.Sprintf("RIVAGE_DATASTORE_URL=%s", spec.DatastoreUrl))
+	}
+
 	for k, v := range spec.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
@@ -484,8 +489,7 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 	return &taskResult{proto: base, diskPath: outPath}
 }
 
-// ── Result sender ─────────────────────────────────────────────────────────────
-
+// Result sender
 func (w *Worker) resultSender(ctx context.Context, stream pb.WorkerService_ConnectClient, ch <-chan *taskResult) {
 	for {
 		select {

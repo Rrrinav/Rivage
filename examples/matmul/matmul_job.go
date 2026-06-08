@@ -72,7 +72,7 @@ func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]flo
 	return res, err
 }
 
-func rowBandShuffle(outputs []dag.TaskOutput, stats *PipelineStats, dataStoreURL string) (dag.ShuffleResult, error) {
+func rowBandShuffle(outputs []dag.TaskOutput, stats *PipelineStats) (dag.ShuffleResult, error) {
 	rowGroups := make(map[int][]json.RawMessage)
 
 	for _, out := range outputs {
@@ -92,9 +92,9 @@ func rowBandShuffle(outputs []dag.TaskOutput, stats *PipelineStats, dataStoreURL
 	res := make(dag.ShuffleResult)
 	for row, tiles := range rowGroups {
 		payload, _ := json.Marshal(map[string]interface{}{
-			"row":        row,
-			"tiles":      tiles,
-			"upload_url": fmt.Sprintf("%s/row_%d.bin", dataStoreURL, row),
+			"row":         row,
+			"tiles":       tiles,
+			"upload_file": fmt.Sprintf("row_%d.bin", row),
 		})
 
 		res[fmt.Sprintf("assemble-row-%d", row)] = dag.TaskInput{Data: payload}
@@ -107,6 +107,7 @@ func aggregateFinalMetadata(outputs []dag.TaskOutput, n int, stats *PipelineStat
 		Row         int     `json:"row"`
 		Rows        int     `json:"rows"`
 		Cols        int     `json:"cols"`
+		File        string  `json:"file"`
 		URL         string  `json:"url"`
 		IOTime      float64 `json:"io_time"`
 		ComputeTime float64 `json:"compute_time"`
@@ -136,22 +137,22 @@ func aggregateFinalMetadata(outputs []dag.TaskOutput, n int, stats *PipelineStat
 	return string(summary), nil
 }
 
-func makeTileMetadata(aUrl, bUrl string, n, tileSize int, dataStoreURL string) []dag.TaskInput {
+func makeTileMetadata(aFile, bFile string, n, tileSize int) []dag.TaskInput {
 	var chunks []dag.TaskInput
 	for tr := 0; tr*tileSize < n; tr++ {
 		for tc := 0; tc*tileSize < n; tc++ {
 			rs, re := tr*tileSize, min((tr+1)*tileSize, n)
 			cs, ce := tc*tileSize, min((tc+1)*tileSize, n)
 			payload, _ := json.Marshal(map[string]interface{}{
-				"a_url": aUrl, "b_url": bUrl, "total_n": n,
+				"a_file": aFile, "b_file": bFile, "total_n": n,
 				"tile_row": tr, "tile_col": tc,
 				"r_start": rs, "r_end": re, "c_start": cs, "c_end": ce,
-				"upload_url": fmt.Sprintf("%s/tile_%d_%d.bin", dataStoreURL, tr, tc),
+				"upload_file": fmt.Sprintf("tile_%d_%d.bin", tr, tc),
 			})
 
 			chunks = append(chunks, dag.TaskInput{
 				Data:         payload,
-				AffinityKeys: []string{aUrl, bUrl},
+				AffinityKeys: []string{aFile, bFile},
 			})
 		}
 	}
