@@ -64,7 +64,7 @@ func getJobMetadata(prefix string) (latestJobID string, nextSerial int) {
 func main() {
 	cfgPath := flag.String("config", "configs/coordinator.yaml", "path to coordinator config file")
 	exampleFlag := flag.String("example", "matmul", "Which example to run: matmul, hashcrack, or crmm")
-	datastoreFlag := flag.String("datastore", "http://localhost:8081/data", "Base URL for the datastore")
+	datastoreURL := flag.String("datastore", "http://localhost:8081/data", "Base URL for the datastore")
 	grpcAddrFlag := flag.String("grpc-addr", "", "Override gRPC listen address (e.g., 10.0.0.50:50051)")
 	
 	// Flags for our advanced recovery system
@@ -81,6 +81,10 @@ func main() {
 	if *grpcAddrFlag != "" {
 		cfg.Server.GRPCAddr = *grpcAddrFlag
 	}
+
+	if *datastoreURL != "" {
+        cfg.Server.DatastoreURL = *datastoreURL
+    }
 
 	coord, err := coordinator.New(cfg)
 	if err != nil {

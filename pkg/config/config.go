@@ -24,6 +24,7 @@ type ServerConfig struct {
 	GRPCAddr          string `yaml:"grpc_addr"`
 	HTTPAddr          string `yaml:"http_addr"`
 	MaxConcurrentJobs int    `yaml:"max_concurrent_jobs"`
+	DatastoreURL      string `yaml:"datastore_url"`
 }
 
 type SecurityConfig struct {

@@ -46,7 +46,7 @@ func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]flo
 		Stage("assemble_row",
 			dag.ScriptExecutor("python3", "examples/matmul/assemble.py"),
 			dag.WithShuffle(func(out []dag.TaskOutput) (dag.ShuffleResult, error) {
-				return rowBandShuffle(out, stats, dataStoreURL)
+				return rowBandShuffle(out, stats) // <-- Removed dataStoreURL
 			}),
 		).
 		Build()
@@ -54,7 +54,7 @@ func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]flo
 		return "", err
 	}
 
-	chunks := makeTileMetadata(dataStoreURL+"/A.bin", dataStoreURL+"/B.bin", n, tileSize, dataStoreURL)
+	chunks := makeTileMetadata("A.bin", "B.bin", n, tileSize)
 	
 	if jobID == "" {
 		jobID = fmt.Sprintf("matmul-%d", time.Now().UnixMilli())
