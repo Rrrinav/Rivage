@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
+	"sort"
 	"time"
 
 	"rivage/pkg/coordinator"
@@ -47,34 +50,44 @@ func PrimesJob(ctx context.Context, coord *coordinator.Coordinator, maxVal int, 
 		return "", err
 	}
 
-	res, err := processResults(outputs, maxVal)
+	res, err := processResults(outputs, maxVal, jobID)
 	if err == nil {
 		coord.RegisterJobResult(jobID, res)
 	}
 	return res, err
 }
 
-func processResults(outputs []dag.TaskOutput, maxVal int) (string, error) {
+func processResults(outputs []dag.TaskOutput, maxVal int, jobID string) (string, error) {
 	var totalCompute float64
 	var totalPrimes int64
+	var allPrimes []int64
 
 	for _, out := range outputs {
 		var res struct {
 			Count          int64   `json:"count"`
 			ComputeTimeSec float64 `json:"compute_time_sec"`
+			Primes         []int64 `json:"primes"`
 		}
 		if err := json.Unmarshal(out.Data, &res); err != nil {
 			return "", fmt.Errorf("failed to parse output: %v", err)
 		}
 		totalCompute += res.ComputeTimeSec
 		totalPrimes += res.Count
+		allPrimes = append(allPrimes, res.Primes...)
 	}
+
+	sort.Slice(allPrimes, func(i, j int) bool { return allPrimes[i] < allPrimes[j] })
+
+	outPath := filepath.Join(".", "rivage_data", jobID+"_primes.json")
+	primesJSON, _ := json.Marshal(allPrimes)
+	os.WriteFile(outPath, primesJSON, 0644)
 
 	summary := map[string]interface{}{
 		"status":                      "success",
 		"search_space_max":            maxVal,
 		"total_primes_found":          totalPrimes,
 		"total_aggregate_compute_sec": totalCompute,
+		"saved_output_file":           outPath,
 	}
 
 	bytes, _ := json.MarshalIndent(summary, "", "  ")
