@@ -12,25 +12,21 @@ WORKER_DATA_DIR = "./rivage_worker_data"
 def download_file(url, local_path):
     if os.path.exists(local_path):
         return
-    temp_path = local_path + ".download"
-    if os.path.exists(temp_path):
-        while not os.path.exists(local_path):
-            time.sleep(0.5)
-        return
+    # Each worker downloads to its own temp file, then races to rename.
+    # os.replace is atomic — last writer wins, all readers see a complete file.
+    own_temp = local_path + f".tmp.{os.getpid()}"
     try:
-        with open(temp_path, 'w') as f:
-            f.write("")
-        urllib.request.urlretrieve(url, temp_path)
-        os.replace(temp_path, local_path)
+        urllib.request.urlretrieve(url, own_temp)
+        os.replace(own_temp, local_path)
     except Exception as e:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
+        if os.path.exists(own_temp):
+            os.remove(own_temp)
         raise e
 
 
 def upload_file(url, local_path):
-    with open(local_path, 'rb') as f:
-        req = urllib.request.Request(url, data=f, method='PUT')
+    with open(local_path, "rb") as f:
+        req = urllib.request.Request(url, data=f, method="PUT")
         urllib.request.urlopen(req)
 
 
@@ -54,26 +50,33 @@ def main():
 
         t1 = time.time()
         download_file(t["url"], lp)
-        io_time += (time.time() - t1)
+        io_time += time.time() - t1
 
         t1 = time.time()
         # Read the partial 32MB matrix into RAM and add it to our sum
-        P = np.memmap(lp, dtype=np.float64, mode='r', shape=(ts, ts))
+        P = np.memmap(lp, dtype=np.float64, mode="r", shape=(ts, ts))
         C_block += P
-        compute_time += (time.time() - t1)
+        compute_time += time.time() - t1
 
     t1 = time.time()
     out_local = os.path.join(WORKER_DATA_DIR, f"c_{i}_{j}.bin")
-    out_fp = np.memmap(out_local, dtype=np.float64, mode='w+', shape=(ts, ts))
+    out_fp = np.memmap(out_local, dtype=np.float64, mode="w+", shape=(ts, ts))
     out_fp[:] = C_block[:]
     out_fp.flush()
     upload_file(config["upload_url"], out_local)
-    io_time += (time.time() - t1)
+    io_time += time.time() - t1
 
-    print(json.dumps({
-        "i": i, "j": j, "url": config["upload_url"],
-        "io_time": io_time, "compute_time": compute_time
-    }))
+    print(
+        json.dumps(
+            {
+                "i": i,
+                "j": j,
+                "url": config["upload_url"],
+                "io_time": io_time,
+                "compute_time": compute_time,
+            }
+        )
+    )
 
 
 if __name__ == "__main__":

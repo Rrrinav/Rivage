@@ -15,6 +15,7 @@ import (
 	"rivage/examples/crmm"
 	"rivage/examples/hashcrack"
 	"rivage/examples/matmul"
+	"rivage/examples/primes"
 	"rivage/pkg/config"
 	"rivage/pkg/coordinator"
 )
@@ -149,6 +150,21 @@ func main() {
 
 			log.Printf("[demo] Matrix job completed in %v", time.Since(start))
 			log.Printf("[demo] Final Matrix Metadata:\n%s", resultMeta)
+		
+		case "primes":
+			log.Printf("[demo] Starting C++ Polyglot Prime Number Search...")
+			maxVal := 1000000000
+			chunkSize := 500000
+
+			start := time.Now()
+			resultMeta, err := primes.PrimesJob(ctx, coord, maxVal, chunkSize, jobID, *resumeFlag)
+			if err != nil {
+				log.Printf("[demo] Primes job failed: %v", err)
+				return
+			}
+
+			log.Printf("[demo] Primes job completed in %v", time.Since(start))
+			log.Printf("[demo] Final Result:\n%s", resultMeta)
 
 		case "hashcrack":
 			log.Printf("[demo] Starting CPU-Bound Distributed Hash Cracking...")

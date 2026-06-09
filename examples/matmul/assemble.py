@@ -6,45 +6,21 @@ import urllib.request
 import time
 import numpy as np
 
-WORKER_DATA_DIR = "./rivage_worker_data"
 DATASTORE_URL = os.environ.get("RIVAGE_DATASTORE_URL")
 if not DATASTORE_URL:
-    print(
-        "FATAL: RIVAGE_DATASTORE_URL environment variable is missing!", file=sys.stderr
-    )
+    print("FATAL: RIVAGE_DATASTORE_URL environment variable is missing!", file=sys.stderr)
     sys.exit(1)
 
+def download_to_ram(url):
+    req = urllib.request.Request(url)
+    with urllib.request.urlopen(req, timeout=60) as response:
+        return response.read()
 
-def download_file(url, local_path):
-    if os.path.exists(local_path):
-        return
-
-    temp_path = local_path + ".download"
-
-    if os.path.exists(temp_path):
-        while not os.path.exists(local_path):
-            time.sleep(0.5)
-        return
-
-    try:
-        with open(temp_path, "w") as f:
-            f.write("")
-        urllib.request.urlretrieve(url, temp_path)
-        os.replace(temp_path, local_path)
-    except Exception as e:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-        raise e
-
-
-def upload_file(url, local_path):
-    with open(local_path, "rb") as f:
-        req = urllib.request.Request(url, data=f, method="PUT")
-        urllib.request.urlopen(req)
-
+def upload_data(url, data_bytes):
+    req = urllib.request.Request(url, data=data_bytes, method="PUT")
+    urllib.request.urlopen(req, timeout=60)
 
 def main():
-    os.makedirs(WORKER_DATA_DIR, exist_ok=True)
     config = json.load(sys.stdin)
     row_idx = config["row"]
     tiles = sorted(config["tiles"], key=lambda t: t["tile_col"])
@@ -53,14 +29,14 @@ def main():
 
     t0 = time.time()
     loaded_tiles = []
+    
+    # Download tiles directly into memory
     for t in tiles:
-        lp = os.path.join(WORKER_DATA_DIR, f"tile_{t['tile_row']}_{t['tile_col']}.bin")
-        # Construct the URL for the specific tile
         tile_url = f"{DATASTORE_URL}/{t['file']}"
-        download_file(tile_url, lp)
-        loaded_tiles.append(
-            np.memmap(lp, dtype=np.float64, mode="r", shape=(t["rows"], t["cols"]))
-        )
+        raw_bytes = download_to_ram(tile_url)
+        arr = np.frombuffer(raw_bytes, dtype=np.float64).reshape((t["rows"], t["cols"]))
+        loaded_tiles.append(arr)
+        
     io_time = time.time() - t0
 
     t0 = time.time()
@@ -68,12 +44,8 @@ def main():
     compute_time = time.time() - t0
 
     t0 = time.time()
-    out_lp = os.path.join(WORKER_DATA_DIR, f"row_{row_idx}.bin")
-    out_fp = np.memmap(out_lp, dtype=np.float64, mode="w+", shape=row_band.shape)
-    out_fp[:] = row_band[:]
-    out_fp.flush()
-
-    upload_file(upload_url, out_lp)
+    # Stream the final assembled row directly to the Datastore
+    upload_data(upload_url, row_band.tobytes())
     io_time += time.time() - t0
 
     print(
@@ -88,7 +60,6 @@ def main():
             }
         )
     )
-
 
 if __name__ == "__main__":
     main()

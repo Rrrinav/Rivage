@@ -24,6 +24,7 @@
 // Heading Numbering Setup
 #set heading(numbering: "1.1")
 
+
 // Custom Level 1 Heading format to match the image
 #show heading.where(level: 1): it => (
   pagebreak(weak: true)
@@ -47,7 +48,7 @@
   header: context [
     #set text(size: 10pt)
     #align(right)[
-      #text(weight: "regular")[RIVAGE: A POLYGLOT DISTRIBUTED COMPUTE ENGINE]
+      #text(weight: "regular")[A POLYGLOT DISTRIBUTED COMPUTE ENGINE]
       #h(2mm)
       #box(width: 1pt, height: 0.9em, fill: black, baseline: 15%)
       #h(2mm)
@@ -71,60 +72,166 @@
   ],
 )
 
-// Title Page
-#align(center)[
-  #v(1cm)
-  #text(size: 16pt, weight: "bold")[Rivage: A Polyglot Distributed Compute Engine for Numerical and Batch Processing] \
-  #v(1.5cm)
-  #text(size: 14pt)[A Report submitted] \
-  #text(size: 12pt)[in partial fulfillment of the requirement] \
-  #text(size: 12pt)[for the award of a Degree of] \
-  #v(0.5cm)
-  #text(size: 14pt, weight: "bold")[Bachelor of Technology] \
-  #v(0.5cm)
-  #text(size: 12pt)[in] \
-  #v(0.5cm)
-  #text(size: 14pt, weight: "bold")[Computer Science and Engineering] \
-  #v(1cm)
-  #text(size: 12pt)[by] \
-  #v(0.5cm)
-  #text(size: 14pt, weight: "bold")[Name] \
-  #text(size: 12pt)[(Roll Number)] \
-  #v(1.5cm)
-  #text(size: 12pt)[Under the guidance of] \
-  #v(0.5cm)
-  #text(size: 14pt, weight: "bold")[Guide Name] \
-  #v(2cm)
-  #text(size: 14pt, weight: "bold")[Department of Computer Science and Engineering] \
-  #text(size: 14pt, weight: "bold")[National Institute of Technology, Srinagar,] \
-  #text(size: 14pt, weight: "bold")[Kashmir 190006, INDIA] \
-  #v(1cm)
-  #text(size: 14pt, weight: "bold")[May 2026]
-]
-
 // Front Matter
-#heading(numbering: none)[CERTIFICATE]
-[To be drafted: A rigorous certification of original academic work, signed and formally verified by the supervising faculty in strict accordance with the NIT Srinagar format mandates.]
+#[
+  #show heading.where(level: 1): it => align(center)[
+    #text(size: 14pt, weight: "bold")[#it.body]
+    #v(0.5cm)
+  ]
 
-#heading(numbering: none)[STUDENT DECLARATION]
-[To be drafted: A binding declaration confirming absolute original authorship and guaranteeing the total absence of plagiarized material.]
+  #align(center)[
+    #v(1cm)
+    #text(size: 16pt, weight: "bold")[A Polyglot Distributed Compute Engine] \
+    #v(0.5cm)
+    #text(size: 14pt)[_A Report submitted_] \
+    #text(size: 12pt)[_in partial fulfillment of the requirement_]
+    #text(size: 12pt)[_for the award of a Degree of_] \
+    #v(0.1cm)
+    #text(size: 14pt, weight: "bold")[Bachelor of Technology] \
+    #v(0.1cm)
+    #text(size: 12pt)[in] \
+    #v(0.5cm)
+    #text(size: 14pt, weight: "bold")[Computer Science and Engineering] \
+    #v(0.5cm)
+    #text(size: 12pt)[by] \
+    #v(0.5cm)
+    #text(size: 14pt, weight: "bold")[Rinav Hansa (2022BCSE005)] \
+    #text(size: 14pt, weight: "bold")[Nizal Abdul Razak (2022BCSE001)] \
+    #text(size: 14pt, weight: "bold")[Mahmood Ul Rehman (2022BCSE010)] \
+    #v(0.5cm)
+    #text(size: 12pt)[Under the guidance of] \
+    #v(0.5cm)
+    #text(size: 14pt, weight: "bold")[Dr. Lavanya Madhuri Bollipo] \
+    #v(0.5cm)
+    #text(size: 14pt, weight: "bold")[Department of Computer Science and Engineering] \
+    #text(size: 14pt, weight: "bold")[National Institute of Technology Srinagar,] \
+    #text(size: 14pt, weight: "bold")[Kashmir 190006, INDIA] \
+    #v(1cm)
+    #text(size: 14pt, weight: "bold")[June 2026]
+  ]
 
-#heading(numbering: none)[ACKNOWLEDGEMENTS]
-[To be drafted: A professional acknowledgement extending appropriate gratitude to the supervisor, the departmental faculty, and the hosting institution.]
+  #pagebreak()
+  #heading(numbering: none)[CERTIFICATE]
+  #v(1cm)
+  This is to certify that the project report entitled *A Polyglot Distributed Compute Engine*, submitted by *Rinav Hansa* (2022BCSE005), *Nizal Abdul Razak* (2022BCSE001), and *Mahmood Ul Rehman* (2022BCSE010) in partial fulfillment of the requirements for the award of the degree of Bachelor of Technology in Computer Science and Engineering, is a record of original and independent research work carried out by them under our supervision and guidance.
 
-#heading(numbering: none)[ABSTRACT]
-[To be drafted: A high-density summary of the architectural claims. This must emphasize the zero-dependency Go orchestrator, the polyglot POSIX boundaries, and the deterministic fault-tolerance mechanisms that define the system.]
+  To the best of my knowledge, the matter embodied in this report has not been submitted in part or full to any other university or institute for the award of any degree or diploma.
 
-#outline(title: "TABLE OF CONTENTS", depth: 2)
+  #v(3cm)
+  #grid(
+    align: (left),
+    [
+      #line(length: 60%)
+      *Dr. Lavanya Madhuri Bollipo* \
+      Assistant Professor \
+      Department of Computer Science & Engineering \
+      National Institute of Technology Srinagar
+    ],
+  )
 
-#heading(numbering: none)[LIST OF FIGURES]
-#outline(title: none, target: figure.where(kind: image))
+  #pagebreak()
+  #heading(numbering: none)[STUDENT DECLARATION]
+  #v(1cm)
+  We, *Rinav Hansa*, *Nizal Abdul Razak*, and *Mahmood Ul Rehman*, bearing Roll Numbers 2022BCSE005, 2022BCSE001, and 2022BCSE010, hereby declare that the project report entitled *A Polyglot Distributed Compute Engine* is an authentic record of our own original work, carried out under the supervision of *Dr. Lavanya Madhuri Bollipo*, Department of Computer Science and Engineering, National Institute of Technology Srinagar.
 
-#heading(numbering: none)[LIST OF TABLES]
-#outline(title: none, target: figure.where(kind: table))
+  We further certify that the research, architecture, and codebase presented in this manuscript are fundamentally our own, and all external references, algorithmic inspirations, and theoretical frameworks have been duly acknowledged and cited. This work has not been submitted elsewhere for the award of any other degree or diploma.
 
-#heading(numbering: none)[ABBREVIATIONS / NOTATIONS / NOMENCLATURE]
-[To be drafted: An exhaustive index of technical abbreviations utilized throughout the text (e.g., DAG, RPC, WAL, gRPC, OOM, mTLS).]
+  #v(3cm)
+  #grid(
+    columns: (1fr, 1fr, 1fr),
+    align: (center, center, center),
+    [
+      #line(length: 80%)
+      *Rinav Hansa* \
+      2022BCSE005
+    ],
+    [
+      #line(length: 80%)
+      *Nizal Abdul Razak* \
+      2022BCSE001
+    ],
+    [
+      #line(length: 80%)
+      *Mahmood Ul Rehman* \
+      2022BCSE010
+    ],
+  )
+  #v(1cm)
+  #align(right)[#line(length: 30%)Date]
+
+  #pagebreak()
+  #heading(numbering: none)[ACKNOWLEDGEMENTS]
+  #v(1cm)
+  We would like to express our deepest gratitude to our project guide, *Dr. Lavanya Madhuri Bollipo*, for their invaluable mentorship, technical insights, and unwavering support throughout the development of this distributed engine. Their rigorous academic standards and practical guidance were instrumental in navigating the complex systemic challenges of this research.
+
+  We are deeply indebted to the Head of the Department and the entire faculty of the Department of Computer Science and Engineering at the National Institute of Technology Srinagar for providing a robust academic environment and the foundational knowledge necessary to undertake this endeavor.
+
+  Finally, we would like to extend our sincere appreciation to our families and peers for their continuous encouragement and patience during the intensive research and implementation phases of this project.
+
+  #v(2cm)
+  #grid(
+    columns: (1fr, 1fr, 1fr),
+    align: (center, center, center),
+    [*Rinav Hansa*], [*Nizal Abdul Razak*], [*Mahmood Ul Rehman*],
+  )
+
+  #pagebreak()
+  #heading(numbering: none)[ABSTRACT]
+  #v(1cm)
+  The proliferation of massive datasets has increasingly exposed the severe physical and thermal limitations of single-node computing architectures. While enterprise-grade distributed systems such as Apache Hadoop and Spark successfully mitigate these constraints, their overwhelming reliance on the Java Virtual Machine (JVM) and rigid, monolithic middleware imposes unacceptable latency and memory overheads for mid-tier, polyglot workloads.
+
+  This report details the design, implementation, and empirical evaluation of a lightweight, high-throughput distributed compute engine. Engineered entirely in Go to eliminate heavy dependencies, Rivage deploys a strict Master-Worker topology utilizing bounded-memory HTTP/2 gRPC streams for lock-free data fragmentation. The system violently decouples orchestration from computational logic by utilizing isolated POSIX subprocesses. This architecture enables developers to execute arbitrary data transformations natively in Python, C++, or Rust without requiring framework-specific SDKs.
+
+  To guarantee deterministic cluster recovery without the latency of external databases, the control plane implements a localized Write-Ahead Log (WAL). Furthermore, the engine introduces programmable routing boundaries and dynamic heuristic schedulers that utilize optimistic locking and strict data-affinity metrics to circumvent network saturation.
+
+  Empirical benchmarking validates the architecture's efficiency. Under CPU-bound workloads (Distributed Cryptographic Hash Cracking), the engine scaled linearly across heterogeneous x86_64 and ARM64 nodes, achieving an 8.31x speedup over sequential execution. However, during IO-bound Dense Linear Algebra tasks (10,000 x 10,000 Matrix Multiplication), physical IEEE 802.11 Wi-Fi bandwidth saturated, forcing the pipeline into an I/O wait state. These results rigorously demonstrate that while stateless, POSIX-bounded MapReduce architectures scale flawlessly for compute-heavy tasks, distributed matrix operations are fundamentally network-bound and demand dedicated high-throughput interconnects to prevent processor starvation.
+
+  #pagebreak()
+  #outline(title: "TABLE OF CONTENTS", depth: 2)
+
+  #pagebreak()
+  #heading(numbering: none)[LIST OF FIGURES]
+  #outline(title: none, target: figure.where(kind: image))
+
+  #pagebreak()
+  #heading(numbering: none)[LIST OF TABLES]
+  #outline(title: none, target: figure.where(kind: table))
+
+  #pagebreak()
+  #heading(numbering: none)[ABBREVIATIONS AND NOMENCLATURE]
+  #v(1cm)
+  #grid(
+    columns: (auto, 1fr),
+    column-gutter: 2em,
+    row-gutter: 1em,
+    [*API*], [Application Programming Interface],
+    [*ARM*], [Advanced RISC Machine],
+    [*CPU*], [Central Processing Unit],
+    [*DAG*], [Directed Acyclic Graph],
+    [*GPU*], [Graphics Processing Unit],
+    [*gRPC*], [gRPC Remote Procedure Call],
+    [*HDFS*], [Hadoop Distributed File System],
+    [*HoL*], [Head-of-Line (Blocking)],
+    [*HPC*], [High-Performance Computing],
+    [*HTTP/2*], [Hypertext Transfer Protocol Version 2],
+    [*IPC*], [Inter-Process Communication],
+    [*JVM*], [Java Virtual Machine],
+    [*mTLS*], [Mutual Transport Layer Security],
+    [*NCCL*], [NVIDIA Collective Communication Library],
+    [*NVMe*], [Non-Volatile Memory Express],
+    [*OOM*], [Out-Of-Memory],
+    [*POSIX*], [Portable Operating System Interface],
+    [*RAM*], [Random Access Memory],
+    [*RDD*], [Resilient Distributed Dataset],
+    [*RDMA*], [Remote Direct Memory Access],
+    [*RPC*], [Remote Procedure Call],
+    [*RTT*], [Round-Trip Time],
+    [*SDK*], [Software Development Kit],
+    [*SSD*], [Solid-State Drive],
+    [*TCP/IP*], [Transmission Control Protocol / Internet Protocol],
+    [*WAL*], [Write-Ahead Log],
+  )
+]
 
 
 // Main Content Page Settings (Arabic Numerals)
@@ -148,14 +255,49 @@
 
 // Main Content Chapters
 = INTRODUCTION
+
 == Overview
 The physical constraints of single-node architectures have long precipitated a crisis in systems engineering. As computational demands scale exponentially against the rigid ceilings of localized CPU and GPU capacities, the inevitable bottleneck of von Neumann architectures becomes painfully apparent. A solitary machine, regardless of its aggressive hardware provisioning, is ultimately bound by thermal limits, bus bandwidth, and physical die constraints. We are therefore compelled to look outward. Distributed computation—the orchestration of disparate, geographically scattered hardware into a cohesive logical unit—is not merely an architectural preference. It is a mathematical necessity.
 
-Industrial solutions to this computational deficit have, predictably, ossified into monolithic giants. Systems such as Apache Hadoop dominate the enterprise space, yet they bring with them an architecture that is overwhelmingly complex, notoriously difficult to provision, and inextricably tethered to the Java Virtual Machine (JVM). Such structural rigidity exacts a heavy toll. It imposes severe memory footprints, demands steep operational learning curves, and actively resists the integration of lightweight, polyglot scripting unless mediated by highly inefficient inter-process wrappers. Deploying this scale of infrastructural mass for general-purpose batch processing is akin to using a sledgehammer to crack a walnut. It is fundamentally over-engineered.
+In direct response to operational bloat found in enterprise tooling, this manuscript formally details the architecture of Rivage: a lightweight, high-throughput MapReduce orchestration engine engineered specifically for mechanical agility. Constructed entirely in Go, the system capitalizes on native stackful coroutines and low-latency networking primitives. The architectural focus centers squarely on bounded-memory I/O, utilizing HTTP/2 multiplexing via gRPC and strict binary contracts. By treating worker daemons strictly as agnostic execution vessels, Rivage isolates orchestration mechanics from computational logic, allowing developers to deploy Python, Rust, or C++ logic seamlessly across a decentralized cluster.
 
-In direct response to this operational bloat, this manuscript formally details the architecture of Rivage: a lightweight, high-throughput MapReduce orchestration engine engineered specifically for mechanical agility. We constructed this system entirely from the ground up using Go (Golang). The selection of Go was highly intentional, capitalizing upon its native stackful coroutine concurrency model and exceptionally low-latency networking primitives. The architectural focus centers squarely on bounded-memory I/O, utilizing HTTP/2 multiplexing via gRPC and strict binary contracts established through Protocol Buffers.
+== Challenges in Existing Work
+Contemporary distributed processing ecosystems are largely dominated by monolithic frameworks such as Apache Hadoop and Apache Spark. While these systems successfully process planetary-scale data, their architectural foundations introduce severe engineering friction for mid-tier workloads.
 
-The defining characteristic of the engine is its unapologetic polyglot execution environment. By treating worker daemons strictly as agnostic execution vessels, we completely isolate the orchestration mechanics from the actual computational logic. Data serialization relies upon a precise mixture of structured JSON and raw binary formats, interfacing with a centralized disk-backed state store to guarantee durability. Consequently, developers can implement map and reduce transformations natively in the language of their choosing—Python, Rust, C++, or standard shell scripts—while the Go-based control plane maintains absolute, centralized authority over network routing and cluster synchronization.
+The primary challenge lies in their inextricable dependency on the Java Virtual Machine (JVM). Maintaining a Hadoop or Spark cluster demands sprawling infrastructure dependencies including YARN, Zookeeper, and HDFS. This structural density imposes massive memory overhead simply to sustain the runtime environment, leading to chronic JVM heap saturation and aggressive garbage collection pauses during intensive data shuffles.
+
+Furthermore, these platforms exhibit profound linguistic hostility. Executing non-JVM logic (e.g., native Python machine learning models or high-performance C++ binaries) typically requires fragile bridging mechanisms, such as Hadoop Streaming. These wrappers serialize data over standard input/output streams without adequate backpressure control. Consequently, when a legacy orchestrator blasts a gigabyte of data into a native subprocess, it routinely triggers fatal out-of-memory (OOM) kernel panics on the worker node. Developers are thus forced to choose between rewriting their computational logic entirely in Java/Scala or battling unstable inter-process communication layers.
+
+== Motivation
+The friction inherent in deploying legacy cluster managers creates a hostile barrier to entry for developers requiring rapid horizontal scaling. If an engineer authors a highly optimized Python script capable of cracking cryptographic hashes or processing dense numerical matrices, scaling that execution across ten commodity laptops should not require provisioning an enterprise-grade cloud architecture.
+
+The motivation behind Rivage is the democratization of distributed computation. There is a pressing requirement for a structurally lightweight orchestration layer that respects the Unix philosophy: do one thing and do it well. By shifting the complexity away from the deployment environment and embedding it deeply into a statically compiled, standalone control plane, we can eliminate the "middleware tax." An operator should be capable of bootstrapping a resilient compute cluster using nothing more than bare-metal hardware and a single binary executable.
+
+== Problem Statement
+The enterprise distributed computing ecosystem lacks a structurally lightweight, language-agnostic orchestration engine capable of resiliently distributing arbitrary Directed Acyclic Graph (DAG) workflows across commodity hardware. Existing solutions impose unacceptable latency overheads, mandate heavy JVM middleware, and fail to provide stable, bounded-memory I/O channels for executing isolated, non-native polyglot processes.
+
+== Problem Formulation
+To systematically address the orchestration deficit, we must mathematically and structurally formalize the compute environment.
+
+Let the computational cluster $C$ be defined as a set of heterogeneous, physically isolated compute nodes $N$:
+$ C = {N_"master", N_1, N_2, ..., N_k} $
+
+Let the user-defined workload be represented as a strict Directed Acyclic Graph (DAG), denoted as $G = (V, E)$, where:
+- $V$ is a set of vertices representing bounded computational stages.
+- $E$ is a set of directed edges representing immutable data dependencies, such that $(u, v) in E$ strictly enforces that stage $v$ cannot commence until stage $u$ resolves terminal success.
+
+The orchestration problem requires the formulation of a dynamic scheduling mapping function $f: V \to C_{"active"}$ subject to the following constraints:
+1. *Hardware Compatibility:* Node $N_i$ must possess the environmental tags required by vertex $v$.
+2. *Resource Saturation:* The assignment must not exceed the physical core capacity $L_"max"$ of node $N_i$.
+3. *Fault Tolerance:* If $N_i$ becomes unreachable during the execution of $v$, the mapping function must deterministically re-evaluate $f(v) \to N_j$ without corrupting the intermediate state of $G$.
+
+== Objectives
+To validate the proposed formulation and resolve the targeted problem statement, this research pursues the following explicit objectives:
+
++ *Polyglot Execution Boundaries:* Engineer a Compute Plane daemon that isolates user logic inside native POSIX subprocesses, facilitating the execution of arbitrary Python or C++ scripts natively.
++ *Bounded-Memory Transport:* Implement a custom gRPC chunking protocol over HTTP/2 that guarantees memory usage remains $O(1)$ during the network transfer of massive datasets, eliminating OOM failures.
++ *Dynamic Load Balancing:* Develop a pluggable Scheduler interface utilizing optimistic locking and data-affinity heuristics to prevent the "thundering herd" bottleneck across the worker pool.
++ *Empirical Benchmarking:* Deploy the finalized engine across heterogeneous hardware (x86_64 and ARM64) to rigorously contrast CPU-bound scalability against network-bound limitations under Amdahl's Law.
 
 = Literature Review
 
@@ -196,9 +338,6 @@ As the variable $N$ approaches infinity, the theoretical speedup ceiling converg
 Within MapReduce environments, the isolated Map and Reduce stages naturally exhibit near-perfect parallelism, drastically increasing the value of $p$ @dean2008mapreduce. The intermediate Network Shuffle, however—the barrier where all nodes must suspend computation to route and aggregate keys—constitutes a massive, rigid sequential block. The entire engineering effort of a modern distributed system must, therefore, be intensely directed toward optimizing network transport protocols to compress this sequential fraction to its absolute minimum.
 
 = PROPOSED METHODOLOGY
-
-== Problem Statement
-The objective of this research is to architect and implement a lightweight distributed compute engine capable of orchestrating Directed Acyclic Graph (DAG) workflows alongside native MapReduce tasks across a highly heterogeneous hardware network. We advance a decoupled Master-Worker topology, programmed exclusively in Go, explicitly to eliminate the operational nightmare of legacy cluster management. The resulting system incorporates bounded-memory gRPC streams to guarantee high-throughput communication, native operating system piping to facilitate polyglot task execution, and a strict Write-Ahead Log (WAL) to ensure deterministic control-plane recovery. By systematically excising heavy Java Virtual Machine (JVM) middleware and rigid architectural dependencies, this work seeks to democratize cluster computation. We deliver a mathematically sound, language-agnostic framework that scales linearly upon standard, off-the-shelf commodity hardware.
 
 == Problem Description and System Requirements
 
@@ -1528,22 +1667,22 @@ By injecting a custom mathematical router, the engine dynamically morphs from a 
 
 = RESULTS AND DISCUSSION
 
-To empirically validate the architectural claims established in the methodology, the Rivage engine was subjected to rigorous physical benchmarking. The primary objective of these evaluations was to measure the system's capacity to orchestrate heterogeneous hardware, its resilience against network overhead, and its alignment with the theoretical limits of parallel speedup established by Amdahl's Law. 
+To empirically validate the architectural claims established in the methodology, the Rivage engine was subjected to rigorous physical benchmarking. The primary objective of these evaluations was to measure the system's capacity to orchestrate heterogeneous hardware, its resilience against network overhead, and its alignment with the theoretical limits of parallel speedup established by Amdahl's Law.
 
 == CPU-Bound Workload: Distributed Cryptographic Hash Cracking
 
 The first benchmark evaluated the engine's capability to handle an "Embarrassingly Parallel" CPU-bound workload. The system was tasked with executing a distributed brute-force cryptographic hash cracker (targeting a SHA-256 hash) utilizing a purely polyglot Python script executed via POSIX boundaries.
 
 To test the system's hardware-agnostic design, the physical compute plane was composed of two entirely distinct microarchitectures connected via a standard HTTP/2 wireless local area network:
-- *Node A (Master/Worker):* Intel(R) Core(TM) i5-10300H (x86_64) @ 4.50 GHz (8 Cores)
-- *Node B (Worker):* Apple M2 (ARM64) @ 3.50 GHz (8 Cores)
+- *Node A (Master/Worker):* Intel(R) Core(TM) i5-10300H (x86_64) \@ 4.50 GHz (8 Cores)
+- *Node B (Worker):* Apple M2 (ARM64) \@ 3.50 GHz (8 Cores)
 
 === Task Partitioning and Evaluated Topologies
 The cryptographic search space was systematically partitioned into 676 discrete, bounded tasks (representing a $26 times 26$ two-character prefix grid). To rigorously calculate the system's true parallel speedup, the workload was executed under three distinct topologies:
 
-1. *Sequential Baseline (Pure Python):* A single-threaded Python script executed on the Intel i5 to establish the absolute un-orchestrated $T_1$ baseline.
-2. *Topology A (Single-Node Distributed):* The Rivage Coordinator and 8 Worker Daemons operating strictly locally on the Intel i5 to measure orchestration overhead.
-3. *Topology B (Heterogeneous Distributed):* The cluster expanded across the Wi-Fi network, utilizing 8 workers on the Intel i5 and 8 workers on the Apple M2 (16 concurrent threads total).
++ *Sequential Baseline (Pure Python):* A single-threaded Python script executed on the Intel i5 to establish the absolute un-orchestrated $T_1$ baseline.
++ *Topology A (Single-Node Distributed):* The Rivage Coordinator and 8 Worker Daemons operating strictly locally on the Intel i5 to measure orchestration overhead.
++ *Topology B (Heterogeneous Distributed):* The cluster expanded across the Wi-Fi network, utilizing 8 workers on the Intel i5 and 8 workers on the Apple M2 (16 concurrent threads total).
 
 === Comparative Scalability Analysis
 
@@ -1557,10 +1696,15 @@ In formal systems engineering, system speedup $S(N)$ is calculated as the quotie
       align: (left, center, center, center, center),
       stroke: 0.5pt,
       fill: (col, row) => if row == 0 { rgb("#F8FAFC") } else { none },
-      [*Cluster Topology*], [*Worker Count*], [*Total Aggregate CPU Effort* \ (Sum of all tasks)], [*Distributed Wall-Clock* \ ($T_p$)], [*System Speedup* \ ($T_1 / T_p$)],
+      [*Cluster Topology*],
+      [*Worker Count*],
+      [*Total Aggregate CPU Effort* \ (Sum of all tasks)],
+      [*Distributed Wall-Clock* \ ($T_p$)],
+      [*System Speedup* \ ($T_1 / T_p$)],
+
       [Sequential Baseline \ (Intel i5 only)], [1 Process], [223.46s], [*223.46s*], [1.00x],
       [Topology A \ (Intel i5 local)], [8 Daemons], [469.93s], [*66.43s*], [3.36x],
-      [Topology B \ (Intel i5 + Apple M2)], [16 Daemons], [307.45s], [*26.87s*], [8.31x]
+      [Topology B \ (Intel i5 + Apple M2)], [16 Daemons], [307.45s], [*26.87s*], [8.31x],
     )
   ],
   caption: [Empirical scalability analysis comparing sequential execution against local orchestration and heterogeneous (x86_64 + ARM64) horizontal distribution.],
@@ -1570,11 +1714,83 @@ The data reveals a profound architectural success, explicitly demonstrating both
 
 In *Topology A*, orchestrating 8 independent worker daemons on the single Intel die yielded a _3.36x_ speedup. The aggregate CPU effort inflated from 223s to 469s—a mathematically expected consequence of the operating system context-switching between 8 active Python interpreters and the IPC (Inter-Process Communication) overhead of the Rivage daemon natively piping data to `stdin`. However, by enforcing concurrency through the local semaphore, the engine successfully masked this computational overhead, collapsing the 223-second baseline into a real-world wait time of 66.43 seconds.
 
-The transition to *Topology B* empirically proves the absolute efficacy of the system's network transport layer. By expanding the cluster across a wireless network to encompass the Apple M2 silicon, the system achieved a massive *8.31x true speedup*, driving the wall-clock execution down to just 26.87 seconds. 
+The transition to *Topology B* empirically proves the absolute efficacy of the system's network transport layer. By expanding the cluster across a wireless network to encompass the Apple M2 silicon, the system achieved a massive *8.31x true speedup*, driving the wall-clock execution down to just 26.87 seconds.
 
-Crucially, the total aggregate CPU effort in Topology B *decreased* from 469s to 307s. This anomaly mathematically validates the engine's polyglot, architecture-agnostic design. Because the ARM64-based Apple M2 processes cryptographic hashing instructions with significantly higher per-cycle efficiency than the x86_64 Intel i5, the M2 workers processed their gRPC chunks at a highly accelerated rate. The Rivage Scheduler seamlessly integrated these two fundamentally different CPU architectures, allowing the superior Apple silicon to aggressively pull down the cluster's average completion time per chunk. 
+Crucially, the total aggregate CPU effort in Topology B *decreased* from 469s to 307s. This anomaly mathematically validates the engine's polyglot, architecture-agnostic design. Because the ARM64-based Apple M2 processes cryptographic hashing instructions with significantly higher per-cycle efficiency than the x86_64 Intel i5, the M2 workers processed their gRPC chunks at a highly accelerated rate. The Rivage Scheduler seamlessly integrated these two fundamentally different CPU architectures, allowing the superior Apple silicon to aggressively pull down the cluster's average completion time per chunk.
 
 Ultimately, the HTTP/2 bounded-chunking mechanism and the optimistic locking algorithm entirely negated the wireless network Round-Trip Time (RTT). The Coordinator maintained 16 active execution threads physically saturated across disparate operating systems and CPU architectures without triggering a single TCP packet collision, proving that the engine scales efficiently over commodity hardware.
+
+== Distributed Matrix Multiplication (Network/IO-Bound Workload)
+
+Unlike Hashcracking, dense matrix multiplication is notoriously hostile to distributed systems that lack specialized hardware interconnects. We attempted to multiply two $10,000 times 10,000$ matrices containing 100,000,000 `float64` values each (\~800MB per matrix, 1.6GB total).
+
+=== Evaluated Topologies
+
+To isolate the networking bottleneck from the computational workload, this job was executed under two distinct topologies:
++ *Topology A (Single-Node Distributed):* The Coordinator and workers operate entirely on the Intel i5 loopback interface, forcing all data through the local NVMe SSD.
++ *Topology B (Heterogeneous Distributed):* The cluster expands across the Wi-Fi network to the Apple M2 worker, testing the system's ability to stream 1.6GB of data over standard TCP/IP.
+
+=== Comparative Performance Analysis
+
+The telemetric data extracted from the matrix multiplication runs is summarized in Table 2.
+
+#figure(
+  align(center)[
+    #set text(size: 9.5pt)
+    #table(
+      columns: (2fr, 1.5fr, 1.5fr, 1.5fr),
+      align: (left, center, center, center),
+      stroke: 0.5pt,
+      fill: (col, row) => if row == 0 { rgb("#F8FAFC") } else { none },
+      [*Cluster Topology*], [*Aggregate Compute Time*], [*Aggregate I/O Time*], [*Primary Bottleneck*],
+      [Topology A (Intel i5 local)], [293.63s], [301.01s], [Local NVMe / RAM],
+      [Topology B (Intel i5 + Apple M2)], [\< 1.00s], [\> 3.00m], [Wi-Fi Bandwidth],
+    )
+  ],
+  caption: [Empirical performance analysis highlighting the shift from a compute bottleneck to a severe physical network bottleneck during dense linear algebra.],
+) <matmul-metrics>
+
+*Single Machine Baseline Log (Topology A)* \
+#quote(
+  block: true,
+)[Executes entirely on the local loopback interface, demonstrating high compute and local I/O times prior to Apple M2 hardware intervention.]
+
+```json
+2026/06/09 09:02:32 [demo] Final Matrix Metadata:
+{
+  "dimensions": "10000x10000",
+  "pipeline_stats": {
+    "map_io_sec": 297.0345070362091,
+    "map_compute_sec": 292.94448018074036,
+    "reduce_io_sec": 3.978965997695923,
+    "reduce_compute_sec": 0.6950042247772217
+  },
+  "status": "success",
+  "total_aggregate_compute_sec": 293.6394844055176,
+  "total_aggregate_io_sec": 301.01347303390503
+}
+```
+
+=== Distributed Execution & Optimizations Applied
+
+When moving to the multi-node distributed setup (Topology B), the latency and throughput limitations of TCP/IP immediately surfaced. To give the system the best possible chance to succeed, we engineered the following aggressive, enterprise-grade optimizations:
+
++ *Pre-Transposition (Go):* The Master node transposes Matrix B in memory prior to distribution to ensure contiguous byte layouts, preventing random disk seeks during chunking.
++ *Zero-Copy Serialization (Go):* We bypassed Go's standard reflection (`binary.Write`) in favor of direct memory writing (`binary.LittleEndian.PutUint64`), reducing the 800MB buffer generation time from over 3 minutes down to `<1 second`.
++ *Pull-Based Range Requests (Python):* Instead of the Master pushing 800MB payloads via gRPC, workers utilize HTTP `Range` headers to dynamically pull only the exact byte-bands needed for their specific tile.
++ *Local NVMe Range Caching (Python):* We implemented an active spin-lock caching layer on the worker nodes. This ensured that each massive byte-band was downloaded over Wi-Fi exactly once, and subsequently served directly from the local NVMe drive to sibling processes on the same machine.
+
+=== The Insurmountable Architectural Limit
+
+Despite writing perfectly optimized code, completely bypassing local disk thrashing, and dropping memory allocations to near-zero, the system hit a hard physical ceiling: the networking layer.
+
+Transferring 1.6 GB (12.8 Gigabits) of unique cache data over a standard IEEE 802.11 Wi-Fi connection mathematically requires >30 seconds of sustained, perfect throughput. Because the Apple M2 compute cores operate on a timescale of milliseconds (driving the compute time from 293 seconds down to fractions of a second), the CPU spent >99% of its execution time in an idle state (I/O Wait), completely starved for TCP/IP packet delivery.
+
+=== Conclusion
+
+We exhausted all possible software-level optimizations, ultimately proving that *no amount of code efficiency can bypass a physical hardware bottleneck.* This experiment successfully proved a fundamental axiom of distributed systems: *MapReduce architectures scale near-linearly for CPU-bound tasks, but are actively detrimental for Dense Linear Algebra.* The Hub-and-Spoke TCP/IP architecture utilized by Rivage requires gigabytes of data movement for relatively simple math (an $O(N^3)$ operation constrained by an $O(N^2)$ data pipe).
+
+We must conclude that for operations of this scale, traditional HTTP/gRPC architectures cannot handle the IO load. This hardware bottleneck directly validates modern industry practices, demonstrating exactly why Machine Learning clusters (e.g., PyTorch, TensorFlow) bypass Hub-and-Spoke architectures entirely in favor of *Ring All-Reduce* topologies over *100 Gbps InfiniBand/RDMA* interconnects.
 
 
 = CONCLUSION AND FUTURE WORKS

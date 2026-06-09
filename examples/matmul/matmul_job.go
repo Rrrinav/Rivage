@@ -23,19 +23,44 @@ type PipelineStats struct {
 	ReduceCompute float64 `json:"reduce_compute_sec"`
 }
 
+func transposeMatrix(m [][]float64) [][]float64 {
+	n := len(m)
+	out := make([][]float64, n)
+	for i := range out {
+		out[i] = make([]float64, n)
+	}
+	for i := 0; i < n; i++ {
+		for j := 0; j < n; j++ {
+			out[i][j] = m[j][i]
+		}
+	}
+	return out
+}
+
 func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]float64, tileSize int, dataStoreURL string, jobID string, resume bool) (string, error) {
 	n := len(A)
 	if n == 0 {
 		return "", fmt.Errorf("empty matrix")
 	}
 
+	log.Printf("[matmul] Transposing matrix B to enable contiguous HTTP Range requests...")
+	tTranspose := time.Now()
+	bTransposed := transposeMatrix(B)
+	log.Printf("[matmul] Transpose completed in %v", time.Since(tTranspose))
+
 	log.Printf("[matmul] Uploading dense binary matrices to Data Store at %s...", dataStoreURL)
+	
+	tUploadA := time.Now()
 	if err := uploadMatrix(A, dataStoreURL+"/A.bin"); err != nil {
 		return "", fmt.Errorf("failed to upload A: %w", err)
 	}
-	if err := uploadMatrix(B, dataStoreURL+"/B.bin"); err != nil {
-		return "", fmt.Errorf("failed to upload B: %w", err)
+	log.Printf("[matmul] Uploaded A.bin successfully in %v", time.Since(tUploadA))
+
+	tUploadB := time.Now()
+	if err := uploadMatrix(bTransposed, dataStoreURL+"/B_T.bin"); err != nil {
+		return "", fmt.Errorf("failed to upload B_T: %w", err)
 	}
+	log.Printf("[matmul] Uploaded B_T.bin successfully in %v", time.Since(tUploadB))
 
 	stats := &PipelineStats{}
 
@@ -46,7 +71,7 @@ func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]flo
 		Stage("assemble_row",
 			dag.ScriptExecutor("python3", "examples/matmul/assemble.py"),
 			dag.WithShuffle(func(out []dag.TaskOutput) (dag.ShuffleResult, error) {
-				return rowBandShuffle(out, stats) // <-- Removed dataStoreURL
+				return rowBandShuffle(out, stats)
 			}),
 		).
 		Build()
@@ -54,12 +79,12 @@ func MatrixJob(ctx context.Context, coord *coordinator.Coordinator, A, B [][]flo
 		return "", err
 	}
 
-	chunks := makeTileMetadata("A.bin", "B.bin", n, tileSize)
-	
+	chunks := makeTileMetadata("A.bin", "B_T.bin", n, tileSize)
+
 	if jobID == "" {
 		jobID = fmt.Sprintf("matmul-%d", time.Now().UnixMilli())
 	}
-	
+
 	outputs, err := coord.RunJobRaw(ctx, jobID, pipeline, chunks, resume)
 	if err != nil {
 		return "", err
@@ -108,7 +133,6 @@ func aggregateFinalMetadata(outputs []dag.TaskOutput, n int, stats *PipelineStat
 		Rows        int     `json:"rows"`
 		Cols        int     `json:"cols"`
 		File        string  `json:"file"`
-		URL         string  `json:"url"`
 		IOTime      float64 `json:"io_time"`
 		ComputeTime float64 `json:"compute_time"`
 	}
@@ -137,22 +161,28 @@ func aggregateFinalMetadata(outputs []dag.TaskOutput, n int, stats *PipelineStat
 	return string(summary), nil
 }
 
-func makeTileMetadata(aFile, bFile string, n, tileSize int) []dag.TaskInput {
+func makeTileMetadata(aFile, btFile string, n, tileSize int) []dag.TaskInput {
 	var chunks []dag.TaskInput
 	for tr := 0; tr*tileSize < n; tr++ {
 		for tc := 0; tc*tileSize < n; tc++ {
 			rs, re := tr*tileSize, min((tr+1)*tileSize, n)
 			cs, ce := tc*tileSize, min((tc+1)*tileSize, n)
 			payload, _ := json.Marshal(map[string]interface{}{
-				"a_file": aFile, "b_file": bFile, "total_n": n,
-				"tile_row": tr, "tile_col": tc,
-				"r_start": rs, "r_end": re, "c_start": cs, "c_end": ce,
+				"a_file":      aFile,
+				"b_t_file":    btFile,
+				"total_n":     n,
+				"tile_row":    tr,
+				"tile_col":    tc,
+				"r_start":     rs,
+				"r_end":       re,
+				"c_start":     cs,
+				"c_end":       ce,
 				"upload_file": fmt.Sprintf("tile_%d_%d.bin", tr, tc),
 			})
 
 			chunks = append(chunks, dag.TaskInput{
 				Data:         payload,
-				AffinityKeys: []string{aFile, bFile},
+				AffinityKeys: nil, 
 			})
 		}
 	}
@@ -160,15 +190,30 @@ func makeTileMetadata(aFile, bFile string, n, tileSize int) []dag.TaskInput {
 }
 
 func uploadMatrix(m [][]float64, url string) error {
+	log.Printf("[matmul] -> Starting buffer generation for %s", url)
+	tBuf := time.Now()
+	
 	buf := new(bytes.Buffer)
+	
+	n := len(m)
+	if n > 0 {
+		buf.Grow(n * len(m[0]) * 8)
+	}
+
 	for _, row := range m {
 		for _, val := range row {
 			binary.Write(buf, binary.LittleEndian, val)
 		}
 	}
+	log.Printf("[matmul] -> Buffer generation complete in %v (Size: %d bytes)", time.Since(tBuf), buf.Len())
+
+	log.Printf("[matmul] -> Starting HTTP PUT to %s", url)
+	tHttp := time.Now()
 	req, _ := http.NewRequest(http.MethodPut, url, buf)
 	resp, _ := http.DefaultClient.Do(req)
-	resp.Body.Close()
+	defer resp.Body.Close()
+	
+	log.Printf("[matmul] -> HTTP PUT complete in %v (Status: %s)", time.Since(tHttp), resp.Status)
 	return nil
 }
 

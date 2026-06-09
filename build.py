@@ -187,6 +187,19 @@ def cmd_build() -> None:
     ok(f"worker      -> {worker_out}")
     run(["go", "build", "-o", str(datastore_out), "./cmd/datastore/"])
     ok(f"datastore   -> {datastore_out}")
+
+    # Compile the C++ worker natively (moved to src/ to hide from cgo)
+    cpp_src = ROOT / "examples" / "primes" / "src" / "primes_worker.cpp"
+    cpp_bin = (
+        ROOT
+        / "examples"
+        / "primes"
+        / ("primes_worker.exe" if sys.platform == "win32" else "primes_worker")
+    )
+    if cpp_src.exists():
+        run(["g++", "-O3", str(cpp_src), "-o", str(cpp_bin)])
+        ok(f"c++ worker  -> {cpp_bin}")
+
     ok("Build complete")
 
 
@@ -375,7 +388,7 @@ def main() -> None:
         "--example",
         type=str,
         default="matmul",
-        choices=["matmul", "hashcrack", "crmm"],
+        choices=["matmul", "hashcrack", "crmm", "primes"],
         help="Example to run",
     )
     parser.add_argument(

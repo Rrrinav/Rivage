@@ -6,82 +6,57 @@ import urllib.request
 import time
 import numpy as np
 
-WORKER_DATA_DIR = "./rivage_worker_data"
 DATASTORE_URL = os.environ.get("RIVAGE_DATASTORE_URL")
 if not DATASTORE_URL:
-    print(
-        "FATAL: RIVAGE_DATASTORE_URL environment variable is missing!", file=sys.stderr
-    )
+    print("FATAL: RIVAGE_DATASTORE_URL environment variable is missing!", file=sys.stderr)
     sys.exit(1)
 
+def download_range(url, start_byte, end_byte):
+    headers = {'Range': f'bytes={start_byte}-{end_byte}'}
+    req = urllib.request.Request(url, headers=headers)
+    
+    with urllib.request.urlopen(req, timeout=60) as response:
+        return response.read()
 
-def download_file(url, local_path):
-    if os.path.exists(local_path):
-        return
-
-    temp_path = local_path + ".download"
-
-    # Simple check: If another task is already downloading it, just wait!
-    if os.path.exists(temp_path):
-        while not os.path.exists(local_path):
-            time.sleep(0.5)
-        return
-
-    # Otherwise, claim the download by creating the .download file
-    try:
-        with open(temp_path, "w") as f:
-            f.write("")
-
-        urllib.request.urlretrieve(url, temp_path)
-        os.replace(temp_path, local_path)
-    except Exception as e:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-        raise e
-
-
-def upload_file(url, local_path):
-    with open(local_path, "rb") as f:
-        req = urllib.request.Request(url, data=f, method="PUT")
-        urllib.request.urlopen(req)
-
+def upload_data(url, data_bytes):
+    req = urllib.request.Request(url, data=data_bytes, method="PUT")
+    urllib.request.urlopen(req, timeout=60)
 
 def main():
-    os.makedirs(WORKER_DATA_DIR, exist_ok=True)
     config = json.load(sys.stdin)
     tr, tc, n = config["tile_row"], config["tile_col"], config["total_n"]
+    r_start, r_end = config["r_start"], config["r_end"]
+    c_start, c_end = config["c_start"], config["c_end"]
 
-    a_local = os.path.join(WORKER_DATA_DIR, "A.bin")
-    b_local = os.path.join(WORKER_DATA_DIR, "B.bin")
-    out_local = os.path.join(WORKER_DATA_DIR, f"out_{tr}_{tc}.bin")
-
-    # Construct the network URLs dynamically
     a_url = f"{DATASTORE_URL}/{config['a_file']}"
-    b_url = f"{DATASTORE_URL}/{config['b_file']}"
+    bt_url = f"{DATASTORE_URL}/{config['b_t_file']}"
     upload_url = f"{DATASTORE_URL}/{config['upload_file']}"
 
+    # Calculate precise byte boundaries (8 bytes per float64)
+    a_start = r_start * n * 8
+    a_end = r_end * n * 8 - 1
+    bt_start = c_start * n * 8
+    bt_end = c_end * n * 8 - 1
+
     t0 = time.time()
-    download_file(a_url, a_local)
-    download_file(b_url, b_local)
+    
+    # Pull exactly the byte-bands needed directly into RAM
+    a_bytes = download_range(a_url, a_start, a_end)
+    bt_bytes = download_range(bt_url, bt_start, bt_end)
     io_time = time.time() - t0
 
-    A = np.memmap(a_local, dtype=np.float64, mode="r", shape=(n, n))
-    B = np.memmap(b_local, dtype=np.float64, mode="r", shape=(n, n))
+    # Parse raw bytes into NumPy arrays instantly
+    A_band = np.frombuffer(a_bytes, dtype=np.float64).reshape((r_end - r_start, n))
+    BT_band = np.frombuffer(bt_bytes, dtype=np.float64).reshape((c_end - c_start, n))
 
     t0 = time.time()
-    c_tile = np.dot(
-        A[config["r_start"] : config["r_end"], :],
-        B[:, config["c_start"] : config["c_end"]],
-    )
+    # BT_band.T reconstructs the original vertical column structure
+    c_tile = np.dot(A_band, BT_band.T)
     compute_time = time.time() - t0
 
     t0 = time.time()
-    out_fp = np.memmap(out_local, dtype=np.float64, mode="w+", shape=c_tile.shape)
-    out_fp[:] = c_tile[:]
-    out_fp.flush()
-
-    # Upload to the dynamic URL
-    upload_file(upload_url, out_local)
+    # Push the generated matrix slice straight to the Datastore
+    upload_data(upload_url, c_tile.tobytes())
     io_time += time.time() - t0
 
     print(
@@ -97,7 +72,6 @@ def main():
             }
         )
     )
-
 
 if __name__ == "__main__":
     main()

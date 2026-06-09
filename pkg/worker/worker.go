@@ -433,10 +433,13 @@ func (w *Worker) runSubprocess(ctx context.Context, spec *pb.TaskSpec) *taskResu
 	cmd := exec.CommandContext(ctx, command, args...)
 	cmd.Stdin = bytes.NewReader(spec.InputData)
 	cmd.Stdout = outFile
-	cmd.Stderr = stderrBuf
+
+	// Modify this line to stream live to your terminal
+	cmd.Stderr = io.MultiWriter(stderrBuf, os.Stderr)
+
 	cmd.Env = os.Environ()
 	cmd.Env = append(cmd.Env, fmt.Sprintf("RIVAGE_WORKER_ID=%s", w.id))
-	
+
 	// Inject the dynamic Datastore URL so polyglot scripts can fetch data over the network
 	if spec.DatastoreUrl != "" {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("RIVAGE_DATASTORE_URL=%s", spec.DatastoreUrl))
