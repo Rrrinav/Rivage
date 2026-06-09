@@ -15,12 +15,35 @@ import (
 )
 
 func PrimesJob(ctx context.Context, coord *coordinator.Coordinator, maxVal int, chunkSize int, jobID string, resume bool) (string, error) {
+	log.Printf("[primes] Reading C++ source for Just-In-Time heterogeneous compilation...")
+
+	// 1. Read the raw C++ source code from disk
+	cppSource, err := os.ReadFile("examples/primes/src/primes_worker.cpp")
+	if err != nil {
+		return "", fmt.Errorf("failed to read c++ source: %v", err)
+	}
+
+	// 2. Create a self-compiling POSIX shell script wrapper
+	bashWrapper := fmt.Sprintf("#!/bin/sh\n"+
+		"DIR=$(mktemp -d)\n"+
+		"cat << 'EOF' > $DIR/worker.cpp\n"+
+		"%s\n"+
+		"EOF\n"+
+		"c++ -O3 -std=c++17 $DIR/worker.cpp -o $DIR/worker_bin\n"+
+		"$DIR/worker_bin\n"+
+		"rm -rf $DIR\n", string(cppSource))
+
+	wrapperPath := "examples/primes/jit_worker.sh"
+	if err := os.WriteFile(wrapperPath, []byte(bashWrapper), 0755); err != nil {
+		return "", fmt.Errorf("failed to write jit wrapper: %v", err)
+	}
+
 	log.Printf("[primes] Distributing Prime Number calculation up to %d", maxVal)
 
+	// 3. Instruct the engine to ship the shell wrapper instead of a pre-compiled binary
 	pipeline, err := dag.New("primes_batch").
 		Stage("find_primes",
-			// We pass "{CODE}" as the command. The worker will execute the shipped binary.
-			dag.ScriptExecutor("{CODE}", "examples/primes/primes_worker"),
+			dag.ScriptExecutor("sh", wrapperPath),
 		).
 		Build()
 
